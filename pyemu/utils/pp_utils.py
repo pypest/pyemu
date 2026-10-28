@@ -4,6 +4,7 @@ from __future__ import division, print_function
 
 import os
 import copy
+import heapq
 import numpy as np
 import pandas as pd
 import warnings
@@ -29,11 +30,96 @@ PP_NAMES = ["name", "x", "y", "zone", "parval1"]
 MIN_KRIGE_PPOINTS = 3
 
 # only flag the search as having "under-delivered" relative to what
-# every_n_cell nominally requested for a zone's bounding box if the
-# shortfall is large - a modest shortfall is expected any time a zone's
-# shape doesn't fill its own bounding box (e.g. a diagonal or L-shaped
-# zone) and isn't by itself a sign that interpolation will be poor
+# every_n_cell implies for the zone's active area (active cells /
+# every_n_cell**2) if the shortfall is large. The fallback trigger still
+# compares against the bounding-box stride request (n_requested), since
+# that is what the direct search was asked to deliver
 PPOINT_UNDER_DELIVERY_FRACTION = 0.5
+
+
+def _greedy_fill_ppoints(cells, seeds, radius, max_points, min_points):
+    """Pick pilot point cells from a zone's active ``cells`` by greedy
+    farthest-point selection.
+
+    Starting from ``seeds`` (the stride hits already found - or, if there
+    are none, the active cell nearest the zone centroid), repeatedly add
+    the active cell farthest from everything chosen so far, until every
+    active cell is within ``radius`` cells of a chosen point,
+    ``max_points`` is reached, or all cells are used. ``min_points`` is
+    always honoured if the zone has that many cells.
+
+    Unlike slicing the zone's bounding box into buckets, this follows the
+    zone's own shape: thin or diagonal zones get evenly spaced points
+    along their length and no cell is chosen merely for being the first
+    in its bucket.
+
+    Parameters
+    ----------
+    cells : array-like, shape (n, 2)
+        (row, col) of every active cell in the zone.
+    seeds : list of (row, col)
+        locations to keep and fill around.
+    radius : float
+        covering radius, in cells: stop once no active cell is further than
+        this from a chosen point. ``every_n_cell / sqrt(2)`` is the radius
+        of a square lattice with ``every_n_cell`` between points.
+    max_points : int
+        upper limit on the number of points returned.
+    min_points : int
+        keep adding points until at least this many (if available).
+
+    Returns
+    -------
+    list of (row, col) tuples, seeds first then in order of selection
+    """
+    from scipy.spatial import cKDTree
+
+    cells = np.asarray(cells, dtype=float)
+    chosen = [tuple(int(v) for v in s) for s in seeds]
+    if not chosen:
+        centroid = cells.mean(axis=0)
+        first = int(np.argmin(((cells - centroid) ** 2).sum(axis=1)))
+        chosen.append(tuple(int(v) for v in cells[first]))
+    # squared distance from every cell to its nearest chosen point (cell
+    # coordinates are integers, so this is exact after rounding)
+    min_d2 = np.rint(cKDTree(np.array(chosen, dtype=float)).query(cells)[0] ** 2)
+    radius2 = float(radius) ** 2
+    max_points = max(max_points, len(chosen))
+
+    # Picking the cell with the largest min_d2 each round, then updating
+    # min_d2 over every cell, costs O(points added x cells). Instead keep a
+    # lazy max-heap of the cells still further than ``radius`` from every
+    # chosen point (ties go to the lowest index, as argmax would), and after
+    # each pick only update the cells within the current worst gap of the new
+    # point - nothing further away can be improved by it. A heap entry's key
+    # is only ever an upper bound on its cell's current min_d2, so an entry
+    # whose key no longer matches is re-queued with the current value rather
+    # than trusted. The points chosen are identical to the dense version.
+    todo = np.flatnonzero(min_d2 > radius2)
+    heap = list(zip((-min_d2[todo]).tolist(), todo.tolist()))
+    heapq.heapify(heap)
+    tree = cKDTree(cells)
+    while len(chosen) < max_points and heap:
+        neg_key, idx = heapq.heappop(heap)
+        d2 = -neg_key
+        if d2 != min_d2[idx]:
+            if min_d2[idx] > radius2:
+                heapq.heappush(heap, (-min_d2[idx], idx))
+            continue
+        chosen.append(tuple(int(v) for v in cells[idx]))
+        near = np.asarray(tree.query_ball_point(cells[idx], r=d2 ** 0.5 + 1e-9), dtype=int)
+        near_d2 = ((cells[near] - cells[idx]) ** 2).sum(axis=1)
+        closer = near_d2 < min_d2[near]
+        min_d2[near[closer]] = near_d2[closer]
+
+    # honour min_points even if everything is already within ``radius``
+    while len(chosen) < max_points and len(chosen) < min_points:
+        far = int(np.argmax(min_d2))
+        if min_d2[far] == 0:
+            break
+        chosen.append(tuple(int(v) for v in cells[far]))
+        min_d2 = np.minimum(min_d2, ((cells - cells[far]) ** 2).sum(axis=1))
+    return chosen
 
 
 def setup_pilotpoints_grid(
@@ -253,81 +339,88 @@ def setup_pilotpoints_grid(
                         ))
 
                     n_requested = len(row_cands) * len(col_cands)
+                    # what every_n_cell implies for the zone's own area (one
+                    # point per every_n_cell**2 active cells) - unlike
+                    # n_requested this doesn't assume the zone fills its
+                    # bounding box
+                    n_expected = len(rows) / float(every_n_cell) ** 2
                     hits = [
                         (i, j) for i in row_cands for j in col_cands if zone_mask[i, j]
                     ]
                     fallback_threshold = max(
-                        MIN_KRIGE_PPOINTS, n_requested * PPOINT_UNDER_DELIVERY_FRACTION
+                        MIN_KRIGE_PPOINTS, n_expected * PPOINT_UNDER_DELIVERY_FRACTION
                     )
-                    if len(hits) < fallback_threshold:
+                    # also fall back if enough points were found but they
+                    # leave part of the zone uncovered - i.e. some active
+                    # cell is further than every_n_cell from every direct
+                    # hit (a count alone can't see this: e.g. all the hits
+                    # may fall in one of several disjoint parts of a zone)
+                    too_few = len(hits) < fallback_threshold
+                    uncovered = False
+                    if not too_few and len(hits) > 0:
+                        from scipy.spatial import cKDTree
+
+                        gap = cKDTree(np.array(hits)).query(
+                            np.column_stack([rows, cols])
+                        )[0].max()
+                        uncovered = gap > every_n_cell
+                    if too_few or uncovered:
                         # too few of the candidate stride locations landed
-                        # on an active cell - either below the hard floor,
-                        # or well below what every_n_cell requested for
-                        # this zone (e.g. a small, irregular/non-
+                        # on an active cell (below the hard floor, or well
+                        # below what every_n_cell implies for this zone's
+                        # active area), or they leave part of the zone
+                        # uncovered (e.g. a small, irregular/non-
                         # rectangular, periodic, or multi-part zone shape
                         # that "aliases" against the stride, so the direct
                         # hits it does find are few and/or clustered in
-                        # only part of the zone) - fall back to using the
-                        # zone's active cells directly so a zone that
-                        # actually has enough active cells to support
-                        # kriging - spread across its whole extent - isn't
-                        # raised on, or left with lopsided coverage, just
-                        # because the coarse stride under-sampled it.
-                        # Decimated back down towards what was actually
-                        # requested so a large zone that aliases against
-                        # the stride doesn't explode into a pilot point for
-                        # every single active cell. Never decimate below
-                        # MIN_KRIGE_PPOINTS purely because the zone's own
-                        # bbox-implied request was small.
+                        # only part of the zone) - keep the direct hits
+                        # and fill in the gaps from the zone's active
+                        # cells, so a zone that actually has enough active
+                        # cells to support kriging isn't raised on, or left
+                        # with lopsided coverage, just because the coarse
+                        # stride under-sampled it. Points are added
+                        # greedily (farthest from those already chosen),
+                        # so the count follows the zone's own shape rather
+                        # than its bounding box, and a large zone that
+                        # aliases against the stride doesn't explode into
+                        # a pilot point for every active cell (capped at
+                        # what the stride requested, but never below
+                        # MIN_KRIGE_PPOINTS). How far to fill depends on
+                        # what triggered the fallback: too few points means
+                        # the fill has to deliver the density every_n_cell
+                        # asks for (the covering radius of a square lattice
+                        # at that spacing); if there were enough points and
+                        # only part of the zone was left uncovered, repair
+                        # just that, down to the same every_n_cell tolerance
+                        # that triggered it, rather than re-densifying
+                        # a zone the stride mostly covered well.
                         n_direct = len(hits)
-                        all_hits = list(zip(rows.tolist(), cols.tolist()))
-                        target = max(n_requested, MIN_KRIGE_PPOINTS)
-                        if len(all_hits) > target:
-                            # bucket the zone's bounding box into a grid
-                            # sized (and shaped) to the zone's own aspect
-                            # ratio, and take one active cell per occupied
-                            # bucket - this spreads the decimated points
-                            # across both axes instead of streaking
-                            # through np.where's row-major cell order, and
-                            # (by sizing the two axes to h_row/h_col rather
-                            # than a flat sqrt(target) x sqrt(target) grid)
-                            # still spreads properly along a long, thin
-                            # zone rather than collapsing its short axis
-                            # size the "minor" (relatively shorter) axis
-                            # first and clamp it to >=1, then derive the
-                            # other axis from the target/minor ratio - this
-                            # keeps row_buckets * col_buckets close to
-                            # target even when one axis is so short (e.g. a
-                            # single-column zone) that its raw sqrt-based
-                            # share would round below 1
-                            all_arr = np.array(all_hits)
-                            raw_row = (target * h_row / h_col) ** 0.5
-                            raw_col = (target * h_col / h_row) ** 0.5
-                            if raw_row <= raw_col:
-                                row_buckets = max(1, round(raw_row))
-                                col_buckets = max(1, round(target / row_buckets))
-                            else:
-                                col_buckets = max(1, round(raw_col))
-                                row_buckets = max(1, round(target / col_buckets))
-                            row_bins = np.linspace(row_min, row_max + 1, row_buckets + 1)
-                            col_bins = np.linspace(col_min, col_max + 1, col_buckets + 1)
-                            row_bucket = np.clip(
-                                np.digitize(all_arr[:, 0], row_bins) - 1, 0, row_buckets - 1
+                        hits = _greedy_fill_ppoints(
+                            np.column_stack([rows, cols]),
+                            hits,
+                            every_n_cell / 2 ** 0.5 if too_few else every_n_cell,
+                            max_points=max(n_requested, MIN_KRIGE_PPOINTS),
+                            min_points=MIN_KRIGE_PPOINTS,
+                        )
+                        if too_few:
+                            msg = (
+                                "setup_pilotpoints_grid(): layer {0}, zone {1}: the "
+                                "every_n_cell={2} stride search found only {3} of {4} "
+                                "requested candidate location(s) for this zone - falling "
+                                "back to filling in from its {5} active cell(s), giving "
+                                "{6} pilot point(s)."
                             )
-                            col_bucket = np.clip(
-                                np.digitize(all_arr[:, 1], col_bins) - 1, 0, col_buckets - 1
-                            )
-                            bucket_id = row_bucket * col_buckets + col_bucket
-                            _, first_idx = np.unique(bucket_id, return_index=True)
-                            hits = [all_hits[i] for i in sorted(first_idx.tolist())]
                         else:
-                            hits = all_hits
+                            msg = (
+                                "setup_pilotpoints_grid(): layer {0}, zone {1}: the "
+                                "every_n_cell={2} stride search found {3} of {4} "
+                                "requested candidate location(s) for this zone but left "
+                                "part of it more than every_n_cell from any pilot point - "
+                                "added pilot points from its {5} active cell(s), giving "
+                                "{6} in total."
+                            )
                         warnings.warn(
-                            "setup_pilotpoints_grid(): layer {0}, zone {1}: the "
-                            "every_n_cell={2} stride search found only {3} of {4} "
-                            "requested candidate location(s) for this zone - falling "
-                            "back to using its {5} active cell(s) directly, giving {6} "
-                            "pilot point(s).".format(
+                            msg.format(
                                 k, zone, every_n_cell, n_direct, n_requested, len(rows), len(hits)
                             ),
                             PyemuWarning,
@@ -344,14 +437,14 @@ def setup_pilotpoints_grid(
                                 k, zone, len(hits), len(rows), MIN_KRIGE_PPOINTS
                             )
                         )
-                    elif len(hits) < n_requested * PPOINT_UNDER_DELIVERY_FRACTION:
+                    elif len(hits) < n_expected * PPOINT_UNDER_DELIVERY_FRACTION:
                         warnings.warn(
                             "setup_pilotpoints_grid(): layer {0}, zone {1}: every_n_cell={2} "
-                            "implies up to {3} pilot point location(s) for this zone's "
-                            "extent, but only {4} were found ({5} active cell(s)) - check "
-                            "the zone's shape, or consider a smaller every_n_cell for "
-                            "better coverage.".format(
-                                k, zone, every_n_cell, n_requested, len(hits), len(rows)
+                            "implies about {3:.1f} pilot point(s) for this zone's {5} active "
+                            "cell(s) (one per every_n_cell**2 cells), but only {4} were "
+                            "placed - check the zone's shape, or consider a smaller "
+                            "every_n_cell for better coverage.".format(
+                                k, zone, every_n_cell, n_expected, len(hits), len(rows)
                             ),
                             PyemuWarning,
                         )

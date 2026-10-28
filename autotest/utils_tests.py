@@ -598,13 +598,14 @@ def test_setup_pp_small_zone_uses_fallback_instead_of_raising(tmp_path):
     assert pyemu.pp_utils.MIN_KRIGE_PPOINTS <= len(par_info) < 9
 
 
-def test_setup_pp_under_delivery_warns(tmp_path):
+def test_setup_pp_sparse_zone_not_flagged_as_under_delivered(tmp_path):
     """A zone with enough active cells to clear the MIN_KRIGE_PPOINTS floor,
-    but scattered such that most of the every_n_cell stride locations
-    implied by its bounding box miss the active cells entirely, should warn
-    that the search under-delivered relative to what was requested -
-    without raising, since the points that were found (via the dense
-    fallback) are still enough to support kriging.
+    but scattered so that most of the stride locations implied by its
+    bounding box miss the active cells, goes through the fallback (and says
+    so) but is NOT flagged as under-delivered: the under-delivery warning
+    compares against what every_n_cell implies for the zone's active area
+    (active cells / every_n_cell**2), and here every active cell gets a
+    point, so the zone is not short of points.
     """
     import warnings
     import numpy as np
@@ -645,8 +646,11 @@ def test_setup_pp_under_delivery_warns(tmp_path):
         assert len(par_info) == len(diag_idx)
         msgs = [str(wi.message) for wi in w if issubclass(wi.category, PyemuWarning)]
         assert any(
-            "implies up to" in m and "were found" in m for m in msgs
-        ), f"expected an under-delivery PyemuWarning, got: {msgs}"
+            "falling back" in m for m in msgs
+        ), f"expected a fallback PyemuWarning, got: {msgs}"
+        assert not any(
+            "implies about" in m for m in msgs
+        ), f"did not expect an under-delivery PyemuWarning, got: {msgs}"
 
 
 def test_setup_pp_uneven_coverage_triggers_fallback(tmp_path):
@@ -697,6 +701,120 @@ def test_setup_pp_uneven_coverage_triggers_fallback(tmp_path):
     assert par_info["i"].max() >= 15, (
         "no pilot points fell in the lower diagonal segment (rows >= 15)"
     )
+
+
+def test_setup_pp_marginal_spread_repair_is_minimal(tmp_path):
+    """A zone whose stride hits are well placed but leave one small area
+    just over every_n_cell from any hit should have that area repaired, not
+    be re-densified: the spread-triggered fallback only fills down to the
+    every_n_cell tolerance that triggered it (a count-triggered fallback
+    fills to the denser every_n_cell / sqrt(2) covering radius instead).
+    """
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 40, 40
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.ones((nrow, ncol), dtype=int)  # zone 1 = background
+    # zone 2: two disjoint 4-row bands (thinner than every_n_cell, so the
+    # stride uses each band's own midpoint row); the stride hits along each
+    # band end up just over every_n_cell from the band's far corner cells
+    ibound[5:9, 5:35] = 2
+    ibound[31:35, 5:35] = 2
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=4,
+        use_ibound_zones=True,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    n_z2 = int((par_info["zone"] == 2).sum())
+    # 14 direct stride hits; the repair adds at most a couple (a full
+    # re-densify to every_n_cell / sqrt(2) adds 11)
+    assert 14 <= n_z2 <= 16, n_z2
+
+
+def test_greedy_fill_ppoints_radius():
+    """The fill stops once every cell is within ``radius`` of a point, keeps
+    its seeds, and a smaller radius never gives fewer points."""
+    import numpy as np
+    from pyemu.utils.pp_utils import _greedy_fill_ppoints
+
+    rows, cols = np.mgrid[0:20, 0:20]
+    cells = np.column_stack([rows.ravel(), cols.ravel()])
+    seeds = [(0, 0)]
+    prev = 0
+    for radius in (8.0, 4.0, 2.0):
+        chosen = _greedy_fill_ppoints(cells, seeds, radius, 10 ** 6, 3)
+        assert chosen[0] == (0, 0)
+        d = np.sqrt(
+            ((cells[:, None, :] - np.array(chosen)[None, :, :]) ** 2).sum(-1)
+        ).min(axis=1)
+        assert d.max() <= radius
+        assert len(chosen) >= prev
+        prev = len(chosen)
+    # the minimum count is honoured even if the radius is already met
+    chosen = _greedy_fill_ppoints(cells, seeds, 100.0, 10 ** 6, 3)
+    assert len(chosen) == 3
+
+
+def test_greedy_fill_ppoints_matches_dense_reference():
+    """_greedy_fill_ppoints only updates cells near each new point (lazy
+    heap + KD-tree), for speed on large zones. It must still choose exactly
+    what the plain "farthest cell from everything chosen, updating every
+    cell each round" greedy would, ties included."""
+    import numpy as np
+    from scipy import ndimage
+    from pyemu.utils.pp_utils import _greedy_fill_ppoints
+
+    def dense_reference(cells, seeds, radius, max_points, min_points):
+        cells = np.asarray(cells, dtype=float)
+        chosen = [tuple(int(v) for v in s) for s in seeds]
+        if not chosen:
+            c = cells.mean(axis=0)
+            chosen.append(tuple(int(v) for v in cells[np.argmin(((cells - c) ** 2).sum(1))]))
+        min_d2 = np.full(len(cells), np.inf)
+        for c in chosen:
+            min_d2 = np.minimum(min_d2, ((cells - c) ** 2).sum(1))
+        max_points = max(max_points, len(chosen))
+        while len(chosen) < max_points:
+            far = int(np.argmax(min_d2))
+            d2 = min_d2[far]
+            if d2 == 0 or (d2 <= radius ** 2 and len(chosen) >= min_points):
+                break
+            chosen.append(tuple(int(v) for v in cells[far]))
+            min_d2 = np.minimum(min_d2, ((cells - cells[far]) ** 2).sum(1))
+        return chosen
+
+    rng = np.random.default_rng(0)
+    n_checked = 0
+    while n_checked < 60:
+        shape = tuple(int(v) for v in rng.integers(10, 50, 2))
+        active = ndimage.gaussian_filter(rng.random(shape), rng.uniform(0.5, 3)) > rng.uniform(0.45, 0.56)
+        cells = np.column_stack(np.where(active))
+        if len(cells) < 4:
+            continue
+        k = int(rng.integers(0, 6))
+        seeds = [tuple(cells[i]) for i in rng.choice(len(cells), size=min(k, len(cells)), replace=False)]
+        radius = float(rng.uniform(1.0, 8.0))
+        cap = int(rng.integers(3, 300))
+        assert _greedy_fill_ppoints(cells, seeds, radius, cap, 3) == dense_reference(
+            cells, seeds, radius, cap, 3
+        )
+        n_checked += 1
 
 
 def test_setup_pp_dense_fallback_is_capped(tmp_path):
