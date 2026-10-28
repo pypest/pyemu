@@ -4,6 +4,7 @@ from __future__ import division, print_function
 
 import os
 import copy
+import heapq
 import numpy as np
 import pandas as pd
 import warnings
@@ -23,6 +24,102 @@ PP_FMT = {
     "parval1": FFMT,
 }
 PP_NAMES = ["name", "x", "y", "zone", "parval1"]
+
+# ordinary kriging needs at least 3 non-collinear points to avoid a
+# singular system - fewer than this and interpolation is not well-posed
+MIN_KRIGE_PPOINTS = 3
+
+# only flag the search as having "under-delivered" relative to what
+# every_n_cell implies for the zone's active area (active cells /
+# every_n_cell**2) if the shortfall is large. The fallback trigger still
+# compares against the bounding-box stride request (n_requested), since
+# that is what the direct search was asked to deliver
+PPOINT_UNDER_DELIVERY_FRACTION = 0.5
+
+
+def _greedy_fill_ppoints(cells, seeds, radius, max_points, min_points):
+    """Pick pilot point cells from a zone's active ``cells`` by greedy
+    farthest-point selection.
+
+    Starting from ``seeds`` (the stride hits already found - or, if there
+    are none, the active cell nearest the zone centroid), repeatedly add
+    the active cell farthest from everything chosen so far, until every
+    active cell is within ``radius`` cells of a chosen point,
+    ``max_points`` is reached, or all cells are used. ``min_points`` is
+    always honoured if the zone has that many cells.
+
+    Unlike slicing the zone's bounding box into buckets, this follows the
+    zone's own shape: thin or diagonal zones get evenly spaced points
+    along their length and no cell is chosen merely for being the first
+    in its bucket.
+
+    Parameters
+    ----------
+    cells : array-like, shape (n, 2)
+        (row, col) of every active cell in the zone.
+    seeds : list of (row, col)
+        locations to keep and fill around.
+    radius : float
+        covering radius, in cells: stop once no active cell is further than
+        this from a chosen point. ``every_n_cell / sqrt(2)`` is the radius
+        of a square lattice with ``every_n_cell`` between points.
+    max_points : int
+        upper limit on the number of points returned.
+    min_points : int
+        keep adding points until at least this many (if available).
+
+    Returns
+    -------
+    list of (row, col) tuples, seeds first then in order of selection
+    """
+    from scipy.spatial import cKDTree
+
+    cells = np.asarray(cells, dtype=float)
+    chosen = [tuple(int(v) for v in s) for s in seeds]
+    if not chosen:
+        centroid = cells.mean(axis=0)
+        first = int(np.argmin(((cells - centroid) ** 2).sum(axis=1)))
+        chosen.append(tuple(int(v) for v in cells[first]))
+    # squared distance from every cell to its nearest chosen point (cell
+    # coordinates are integers, so this is exact after rounding)
+    min_d2 = np.rint(cKDTree(np.array(chosen, dtype=float)).query(cells)[0] ** 2)
+    radius2 = float(radius) ** 2
+    max_points = max(max_points, len(chosen))
+
+    # Picking the cell with the largest min_d2 each round, then updating
+    # min_d2 over every cell, costs O(points added x cells). Instead keep a
+    # lazy max-heap of the cells still further than ``radius`` from every
+    # chosen point (ties go to the lowest index, as argmax would), and after
+    # each pick only update the cells within the current worst gap of the new
+    # point - nothing further away can be improved by it. A heap entry's key
+    # is only ever an upper bound on its cell's current min_d2, so an entry
+    # whose key no longer matches is re-queued with the current value rather
+    # than trusted. The points chosen are identical to the dense version.
+    todo = np.flatnonzero(min_d2 > radius2)
+    heap = list(zip((-min_d2[todo]).tolist(), todo.tolist()))
+    heapq.heapify(heap)
+    tree = cKDTree(cells)
+    while len(chosen) < max_points and heap:
+        neg_key, idx = heapq.heappop(heap)
+        d2 = -neg_key
+        if d2 != min_d2[idx]:
+            if min_d2[idx] > radius2:
+                heapq.heappush(heap, (-min_d2[idx], idx))
+            continue
+        chosen.append(tuple(int(v) for v in cells[idx]))
+        near = np.asarray(tree.query_ball_point(cells[idx], r=d2 ** 0.5 + 1e-9), dtype=int)
+        near_d2 = ((cells[near] - cells[idx]) ** 2).sum(axis=1)
+        closer = near_d2 < min_d2[near]
+        min_d2[near[closer]] = near_d2[closer]
+
+    # honour min_points even if everything is already within ``radius``
+    while len(chosen) < max_points and len(chosen) < min_points:
+        far = int(np.argmax(min_d2))
+        if min_d2[far] == 0:
+            break
+        chosen.append(tuple(int(v) for v in cells[far]))
+        min_d2 = np.minimum(min_d2, ((cells - cells[far]) ** 2).sum(axis=1))
+    return chosen
 
 
 def setup_pilotpoints_grid(
@@ -137,17 +234,6 @@ def setup_pilotpoints_grid(
             ycentergrid = np.reshape(ycentergrid, (ycentergrid.shape[0], 1))
 
 
-    # fix for x-section models
-    if xcentergrid.shape[0] == 1:
-        start_row = 0
-    else:
-        start_row = start
-
-    if xcentergrid.shape[1] == 1:
-        start_col = 0
-    else:
-        start_col = start
-
     # check prefix_dict
     keys = list(prefix_dict.keys())
     keys.sort()
@@ -215,23 +301,159 @@ def setup_pilotpoints_grid(
                         pp_df.append([name, x, y, zone, parval1, k,])
                         pp_count += 1
             else:
-                # cycle through rows and cols
-                # allow to run closer to outside edge rather than leaving a gap
-                for i in range(start_row, ib.shape[0] - start_row//2, every_n_cell):
-                    for j in range(start_col, ib.shape[1] - start_col//2, every_n_cell):
-                        # skip if this is an inactive cell
-                        if ib[i, j] <= 0:  # this will account for MF6 style ibound as well
-                            continue
-                        # get the attributes we need
+                # cycle through zones, searching within each zone's own
+                # extent rather than the full array - this way a zone
+                # whose active cells never line up with a stride anchored
+                # to the full grid still gets sampled (this accounts for
+                # MF6-style ibound too, since only >0 cells are active)
+                if use_ibound_zones:
+                    zone_vals = sorted(z for z in np.unique(ib) if z > 0)
+                else:
+                    zone_vals = [1] if np.any(ib > 0) else []
+
+                for zone in zone_vals:
+                    zone_mask = (ib == zone) if use_ibound_zones else (ib > 0)
+                    rows, cols = np.where(zone_mask)
+                    row_min, row_max = int(rows.min()), int(rows.max())
+                    col_min, col_max = int(cols.min()), int(cols.max())
+                    h_row = row_max - row_min + 1
+                    h_col = col_max - col_min + 1
+
+                    # if the zone is thinner than a single stride step along
+                    # an axis (this also covers x-section models, where the
+                    # whole array is a single row or column), just use the
+                    # midpoint of that axis instead of striding it
+                    if h_row <= every_n_cell:
+                        row_cands = [row_min + h_row // 2]
+                    else:
+                        # allow to run closer to outside edge rather than
+                        # leaving a gap
+                        row_cands = list(range(
+                            row_min + start, row_min + h_row - start // 2, every_n_cell
+                        ))
+                    if h_col <= every_n_cell:
+                        col_cands = [col_min + h_col // 2]
+                    else:
+                        col_cands = list(range(
+                            col_min + start, col_min + h_col - start // 2, every_n_cell
+                        ))
+
+                    n_requested = len(row_cands) * len(col_cands)
+                    # what every_n_cell implies for the zone's own area (one
+                    # point per every_n_cell**2 active cells) - unlike
+                    # n_requested this doesn't assume the zone fills its
+                    # bounding box
+                    n_expected = len(rows) / float(every_n_cell) ** 2
+                    hits = [
+                        (i, j) for i in row_cands for j in col_cands if zone_mask[i, j]
+                    ]
+                    fallback_threshold = max(
+                        MIN_KRIGE_PPOINTS, n_expected * PPOINT_UNDER_DELIVERY_FRACTION
+                    )
+                    # also fall back if enough points were found but they
+                    # leave part of the zone uncovered - i.e. some active
+                    # cell is further than every_n_cell from every direct
+                    # hit (a count alone can't see this: e.g. all the hits
+                    # may fall in one of several disjoint parts of a zone)
+                    too_few = len(hits) < fallback_threshold
+                    uncovered = False
+                    if not too_few and len(hits) > 0:
+                        from scipy.spatial import cKDTree
+
+                        gap = cKDTree(np.array(hits)).query(
+                            np.column_stack([rows, cols])
+                        )[0].max()
+                        uncovered = gap > every_n_cell
+                    if too_few or uncovered:
+                        # too few of the candidate stride locations landed
+                        # on an active cell (below the hard floor, or well
+                        # below what every_n_cell implies for this zone's
+                        # active area), or they leave part of the zone
+                        # uncovered (e.g. a small, irregular/non-
+                        # rectangular, periodic, or multi-part zone shape
+                        # that "aliases" against the stride, so the direct
+                        # hits it does find are few and/or clustered in
+                        # only part of the zone) - keep the direct hits
+                        # and fill in the gaps from the zone's active
+                        # cells, so a zone that actually has enough active
+                        # cells to support kriging isn't raised on, or left
+                        # with lopsided coverage, just because the coarse
+                        # stride under-sampled it. Points are added
+                        # greedily (farthest from those already chosen),
+                        # so the count follows the zone's own shape rather
+                        # than its bounding box, and a large zone that
+                        # aliases against the stride doesn't explode into
+                        # a pilot point for every active cell (capped at
+                        # what the stride requested, but never below
+                        # MIN_KRIGE_PPOINTS). How far to fill depends on
+                        # what triggered the fallback: too few points means
+                        # the fill has to deliver the density every_n_cell
+                        # asks for (the covering radius of a square lattice
+                        # at that spacing); if there were enough points and
+                        # only part of the zone was left uncovered, repair
+                        # just that, down to the same every_n_cell tolerance
+                        # that triggered it, rather than re-densifying
+                        # a zone the stride mostly covered well.
+                        n_direct = len(hits)
+                        hits = _greedy_fill_ppoints(
+                            np.column_stack([rows, cols]),
+                            hits,
+                            every_n_cell / 2 ** 0.5 if too_few else every_n_cell,
+                            max_points=max(n_requested, MIN_KRIGE_PPOINTS),
+                            min_points=MIN_KRIGE_PPOINTS,
+                        )
+                        if too_few:
+                            msg = (
+                                "setup_pilotpoints_grid(): layer {0}, zone {1}: the "
+                                "every_n_cell={2} stride search found only {3} of {4} "
+                                "requested candidate location(s) for this zone - falling "
+                                "back to filling in from its {5} active cell(s), giving "
+                                "{6} pilot point(s)."
+                            )
+                        else:
+                            msg = (
+                                "setup_pilotpoints_grid(): layer {0}, zone {1}: the "
+                                "every_n_cell={2} stride search found {3} of {4} "
+                                "requested candidate location(s) for this zone but left "
+                                "part of it more than every_n_cell from any pilot point - "
+                                "added pilot points from its {5} active cell(s), giving "
+                                "{6} in total."
+                            )
+                        warnings.warn(
+                            msg.format(
+                                k, zone, every_n_cell, n_direct, n_requested, len(rows), len(hits)
+                            ),
+                            PyemuWarning,
+                        )
+
+                    if len(hits) < MIN_KRIGE_PPOINTS:
+                        raise Exception(
+                            "setup_pilotpoints_grid(): layer {0}, zone {1} produced only "
+                            "{2} pilot point(s) ({3} active cell(s) in this zone) - fewer "
+                            "than the {4} needed for ordinary kriging to be well-posed. "
+                            "Merge this zone with a neighboring one, lower every_n_cell, "
+                            "or exclude this zone/layer from the pilot point "
+                            "parameterization.".format(
+                                k, zone, len(hits), len(rows), MIN_KRIGE_PPOINTS
+                            )
+                        )
+                    elif len(hits) < n_expected * PPOINT_UNDER_DELIVERY_FRACTION:
+                        warnings.warn(
+                            "setup_pilotpoints_grid(): layer {0}, zone {1}: every_n_cell={2} "
+                            "implies about {3:.1f} pilot point(s) for this zone's {5} active "
+                            "cell(s) (one per every_n_cell**2 cells), but only {4} were "
+                            "placed - check the zone's shape, or consider a smaller "
+                            "every_n_cell for better coverage.".format(
+                                k, zone, every_n_cell, n_expected, len(hits), len(rows)
+                            ),
+                            PyemuWarning,
+                        )
+
+                    for i, j in hits:
                         x = xcentergrid[i, j]
                         y = ycentergrid[i, j]
                         name = "pp_{0:04d}".format(pp_count)
                         parval1 = 1.0
-
-                        # decide what to use as the zone
-                        zone = 1
-                        if use_ibound_zones:
-                            zone = ib[i, j]
                         # stick this pilot point into a dataframe container
                         pp_df.append([name, x, y, zone, parval1, k, i, j])
                         pp_count += 1
