@@ -14,6 +14,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     # one grouped PR a week rather than one PR per package
     groups:
       python-dependencies:
@@ -32,6 +34,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns:
