@@ -2151,6 +2151,18 @@ def _process_array_file(model_file, df):
         np.savetxt(fp, np.atleast_2d(org_arr), fmt=fmt, delimiter=sep)
 
 
+def _chunk_list(items, chunk_len):
+    """split a list into consecutive chunks of at most `chunk_len` items.
+
+    Plain list slicing (rather than numpy reshape) so it works regardless of
+    the array type pandas hands back (e.g. pandas 3 ArrowStringArray).
+    Always returns at least one (possibly empty) chunk.
+    """
+    return [
+        items[i : i + chunk_len] for i in range(0, len(items), chunk_len)
+    ] or [[]]
+
+
 def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     """a function to apply array-based multiplier parameters.
 
@@ -2233,15 +2245,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
             )
             # don't need to process all (e.g. if const. mults apply across kper...)
             pp_args = pp_df.drop_duplicates().to_dict("records")
-            num_ppargs = len(pp_args)
-            num_chunk_floor = num_ppargs // chunk_len
-            main_chunks = (
-                np.array(pp_args)[: num_chunk_floor * chunk_len]
-                .reshape([-1, chunk_len])
-                .tolist()
-            )
-            remainder = np.array(pp_args)[num_chunk_floor * chunk_len :].tolist()
-            chunks = main_chunks + [remainder]
+            chunks = _chunk_list(pp_args, chunk_len)
             print("number of chunks to process:", len(chunks))
             if len(chunks) == 1:
                 _process_chunk_fac2real(chunks[0], 0)
@@ -2258,16 +2262,10 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
             print("finished fac2real", datetime.now())
 
     print("starting arr mlt", datetime.now())
-    uniq = df.model_file.unique()  # unique model input files to be produced
-    num_uniq = len(uniq)  # number of input files to be produced
-    # number of files to send to each processor
-    # lazy splitting the files to be processed into even chunks
-    num_chunk_floor = num_uniq // chunk_len  # number of whole chunks
-    main_chunks = (
-        uniq[: num_chunk_floor * chunk_len].reshape([-1, chunk_len]).tolist()
-    )  # the list of files broken down into chunks
-    remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
-    chunks = main_chunks + [remainder]
+    # unique model input files to be produced, split into chunks of files
+    # to send to each processor
+    uniq = df.model_file.unique().tolist()
+    chunks = _chunk_list(uniq, chunk_len)
     print("number of chunks to process:", len(chunks))
     if len(chunks) == 1:
         _process_chunk_array_files(chunks[0], 0, df)
@@ -2491,16 +2489,10 @@ def apply_genericlist_pars(df, chunk_len=50):
 
     """
     print("starting list mlt", datetime.now())
-    uniq = df.model_file.unique()  # unique model input files to be produced
-    num_uniq = len(uniq)  # number of input files to be produced
-    # number of files to send to each processor
-    # lazy plitting the files to be processed into even chunks
-    num_chunk_floor = num_uniq // chunk_len  # number of whole chunks
-    main_chunks = (
-        uniq[: num_chunk_floor * chunk_len].reshape([-1, chunk_len]).tolist()
-    )  # the list of files broken down into chunks
-    remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
-    chunks = main_chunks + [remainder]
+    # unique model input files to be produced, split into chunks of files
+    # to send to each processor
+    uniq = df.model_file.unique().tolist()
+    chunks = _chunk_list(uniq, chunk_len)
     print("number of chunks to process:", len(chunks))
     if len(chunks) == 1:
         _process_chunk_list_files(chunks[0], 0, df)
