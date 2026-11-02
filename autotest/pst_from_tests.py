@@ -175,7 +175,9 @@ def test_freyberg(tmp_path):
             dict([s.split(':') for s in x.split('_') if ':' in s])))
     sfrobs.pop("oname")
     sfrobs.pop("otype")
-    sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
+    # replace the columns (rather than setting into them via .loc) so the
+    # str dtype (pandas 3 default) doesn't reject the int values
+    sfrobs[sfr_idx] = sfrobs[sfr_idx].astype(int)
     sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
                                   columns=['usecol'], values='obsval')
     sfodf_c = sfodf.set_index(sfr_idx).sort_index()
@@ -214,7 +216,9 @@ def test_freyberg(tmp_path):
             dict([s.split(':') for s in x.split('_') if ':' in s])))
     sfrobs.pop("oname")
     sfrobs.pop("otype")
-    sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
+    # replace the columns (rather than setting into them via .loc) so the
+    # str dtype (pandas 3 default) doesn't reject the int values
+    sfrobs[sfr_idx] = sfrobs[sfr_idx].astype(int)
     sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
                                   columns=['usecol'], values='obsval')
     sfodf_c = sfodf.set_index(sfr_idx).sort_index()
