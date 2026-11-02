@@ -3904,7 +3904,14 @@ def _build_parnames(
             )
 
         if par_style == "d":
-            direct_tpl_df[use_col] = ("~ " + df.loc[:, use_col] + " ~").values
+            # object dtype: non-parameterised rows are later filled with the
+            # original (numeric) values, which a pandas 3 str column rejects.
+            # (an object ndarray of str would be re-inferred as str on assignment)
+            direct_tpl_df[use_col] = pd.Series(
+                ("~ " + df.loc[:, use_col] + " ~").to_numpy(),
+                index=direct_tpl_df.index,
+                dtype=object,
+            )
     if par_style == "d":
         return df, direct_tpl_df
     return df, None
