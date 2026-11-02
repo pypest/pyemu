@@ -3709,7 +3709,10 @@ def _get_use_rows(tpldf, idxcolvals, use_rows, zero_based, fnme,
             for r in use_rows
         ]
     use_rows = set(use_rows)
-    sel = tpldf.sidx.isin(use_rows) | tpldf.idx_strs.isin(use_rows)
+    # idx_strs can only match str entries; passing the tuples/numbers too makes
+    # isin raise for pandas 3 (pyarrow-backed) str dtype
+    str_rows = [r for r in use_rows if isinstance(r, str)]
+    sel = tpldf.sidx.isin(use_rows) | tpldf.idx_strs.isin(str_rows)
     if not sel.any():  # use_rows must be ints
         inidx = list(use_rows.intersection(tpldf.index))
         missing = use_rows.difference(tpldf.index)
