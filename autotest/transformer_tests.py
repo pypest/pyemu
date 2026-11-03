@@ -7,6 +7,7 @@ import pandas as pd
 import platform
 sys.path.append("..")
 import pyemu
+import pyemu.emulators  # not imported by `import pyemu` (heavy), needed for pyemu.emulators.*
 
 def test_base_transformer():
     """Test the BaseTransformer abstract class functionality"""

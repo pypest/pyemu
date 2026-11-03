@@ -534,7 +534,10 @@ class NormalScoreTransformer(BaseTransformer):
                 continue
                 
             values = X[col].values
-            
+            # z-scores are floats: make the column float before writing into it
+            # (an int column would be silently upcast in pandas 2 but raises in pandas 3)
+            result[col] = result[col].astype(float)
+
             # Handle values outside the original range
             min_orig, max_orig = np.min(originals), np.max(originals)
             min_z, max_z = np.min(z_scores), np.max(z_scores)
