@@ -2373,8 +2373,10 @@ def apply_sfr_reach_obs():
     assert df_key.iloc[0, 0] == "sfr_out_file", df_key.iloc[0, :]
     sfr_out_file = df_key.iloc[0].reach
     df_key = df_key.iloc[1:, :].copy()
-    df_key.loc[:, "segment"] = df_key.segment.apply(np.int64)
-    df_key.loc[:, "reach"] = df_key.reach.apply(np.int64)
+    # replace the columns (not .loc[:, col] = ...): the header row made them
+    # text, and a pandas 3 str column rejects the ints
+    df_key["segment"] = df_key.segment.apply(np.int64)
+    df_key["reach"] = df_key.reach.apply(np.int64)
     df_key = df_key.set_index("obs_base")
 
     sfr_kper = load_sfr_out(sfr_out_file, df_key)
