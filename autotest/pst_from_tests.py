@@ -5698,6 +5698,51 @@ def test_hyperpars(tmp_path):
     #     ax.set_title(Path(f).stem)
 
 
+def test_hyperpars_unstructured_explicit_pp(tmp_path):
+    """prep_hyperpars with a dict spatial reference (e.g. MF6 DISU nodes) and explicit
+    pilot point locations given without parval1."""
+    pytest.importorskip("pypestutils")
+    rng = np.random.default_rng(2)
+    n = 200
+    x, y = rng.uniform(0, 1000, n), rng.uniform(0, 600, n)
+    zone = np.where(x < 500, 1, 2)
+    org_d = Path(tmp_path, "org")
+    org_d.mkdir()
+    np.savetxt(Path(org_d, "k.txt"), np.ones((1, n)))
+    sr = {i: (x[i], y[i]) for i in range(n)}
+    gx, gy = np.meshgrid(np.arange(100.0, 1000.0, 200.0), np.arange(100.0, 600.0, 200.0))
+    pp_df = pd.DataFrame({"name": [f"pp{i}" for i in range(gx.size)],
+                          "x": gx.ravel(), "y": gy.ravel(),
+                          "zone": np.where(gx.ravel() < 500, 1, 2)})
+    pf = PstFrom(original_d=org_d, new_d=Path(tmp_path, "template"),
+                 remove_existing=True, spatial_reference=sr, zero_based=True)
+    gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=300.0))
+    pf.add_parameters("k.txt", par_type="pilotpoints", par_name_base="kpp", pargp="kpp",
+                      zone_array=zone[None, :], geostruct=gs, upper_bound=10.0, lower_bound=0.1,
+                      pp_options={"pp_space": pp_df, "use_pp_zones": True,
+                                  "prep_hyperpars": True})
+    pst = pf.build_pst()
+    assert len(pst.parameter_data) == len(pp_df)
+
+    config = next(Path(pf.new_d).glob("*.config.csv"))
+    ppfile = Path(pf.new_d, pd.read_csv(config, index_col=0).loc["pp_filename", "value"])
+    bd = os.getcwd()
+    os.chdir(pf.new_d)
+    try:
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file="mult2model_info.csv")
+        base = np.loadtxt("k.txt").ravel()
+        ppdf = pp_file_to_dataframe(str(ppfile))
+        ppdf.loc[ppdf.index[ppdf.zone == 1][0], "parval1"] = 3.0
+        write_pp_file(str(ppfile), ppdf)
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file="mult2model_info.csv")
+        bumped = np.loadtxt("k.txt").ravel()
+    finally:
+        os.chdir(bd)
+    np.testing.assert_allclose(base, 1.0)
+    changed = ~np.isclose(bumped, base)
+    assert changed.any() and np.all(zone[changed] == 1)
+
+
 def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     import numpy as np
     import pandas as pd

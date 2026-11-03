@@ -883,6 +883,12 @@ def prep_pp_hyperpars(file_tag, pp_filename, pp_info,out_filename, grid_dict,
     for k in keys:
         if k == 'zone_array':
             continue
+        # tables and mappings do not fit in one config entry, and are already written to
+        # their own files: pilot point locations (pp_locs, or pp_space as a dataframe) to
+        # pp_filename, and an unstructured spatial_reference (a dict of node: (x, y)) to
+        # gridinfo_filename
+        if isinstance(pp_options[k], (pd.DataFrame, pd.Series, np.ndarray, dict)):
+            continue
         config_df.loc[k,"value"] = pp_options[k]
 
     #config_df.loc["function_call","value"] = fnx_call
