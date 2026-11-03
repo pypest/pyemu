@@ -2047,8 +2047,10 @@ def apply_sfr_obs():
 
     assert df_key.iloc[0, 0] == "sfr_out_file", df_key.iloc[0, :]
     sfr_out_file = df_key.iloc[0, 1]
-    df_key = df_key.iloc[1:, :]
-    df_key.loc[:, "segment"] = df_key.segment.apply(np.int64)
+    df_key = df_key.iloc[1:, :].copy()
+    # replace the column (not .loc[:, col] = ...): the header row made it
+    # text, and a pandas 3 str column rejects the ints
+    df_key["segment"] = df_key.segment.apply(np.int64)
     df_key.index = df_key.segment
     seg_group_dict = df_key.groupby(df_key.obs_base).groups
 
