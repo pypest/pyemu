@@ -1758,9 +1758,7 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
 
         jco_cols[parnme] = jco_col.obsval
 
-    jco_cols = pd.DataFrame.from_records(
-        data=jco_cols, index=list(obs_diff.index.values)
-    )
+    jco_cols = pd.DataFrame(jco_cols)
 
     jco_cols = pyemu.Jco.from_dataframe(jco_cols)
 
@@ -2143,7 +2141,9 @@ def _process_array_file(model_file, df):
     try:
         # default to space (if fixed format file this should be taken care of
         # in fmt string)
-        sep = df_mf.sep.fillna(' ').iloc[0]
+        sep = df_mf.sep.iloc[0]
+        if pd.isna(sep):  # (filling an all-nan float column with a str is deprecated)
+            sep = ' '
     except AttributeError:
         sep = ' '
     with open(model_file, 'w') as fp:

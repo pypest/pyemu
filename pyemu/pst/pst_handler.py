@@ -993,14 +993,17 @@ class Pst(object):
 
         for col in fieldnames:
             if col not in df.columns:
-                df.loc[:, col] = np.nan
+                df[col] = np.nan
             if col in defaults:
-                df[col] = df.loc[:, col].fillna(defaults[col])
+                col_vals = df.loc[:, col]
+                if isinstance(defaults[col], str) and pd.api.types.is_float_dtype(
+                    col_vals.dtype
+                ):
+                    # filling a float (all-nan) column with a str is deprecated
+                    col_vals = col_vals.astype(object)
+                df[col] = col_vals.fillna(defaults[col])
             if col in converters:
-                # pandas 2.0 `df.loc[:, col] = df.loc[:, col].astype(int)` type
-                # assignment cast RHS to LHS dtype -- therefore did not change
-                # LHS dtype -- this broke shit.
-                # Using `df[col] =` assignment instead.
+                # force the column to be a string first, then apply the converter
                 df[col] = df.loc[:, col].astype(str).apply(converters[col])
         return df
 
