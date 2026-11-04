@@ -138,7 +138,7 @@ pst_config["pargp_format"] = {
 pst_config["pargp_converters"] = {
     "pargpnme": str_con,
     "inctyp": str_con,
-    "dermethd": str_con,
+    "dermthd": str_con,
     "derinc": np.float64,
     "derinclb": np.float64,
     "splitaction": str_con,
