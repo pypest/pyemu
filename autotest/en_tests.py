@@ -317,10 +317,10 @@ def pnulpar_test(tmp_path):
     pe_pnul = pyemu.ParameterEnsemble.from_parfiles(pst=pst,parfile_names=par_files)
 
     pe_pnul._df.index = real_num
-    pe_proj._df.sort_index(axis=1, inplace=True)
-    pe_proj._df.sort_index(axis=0, inplace=True)
-    pe_pnul._df.sort_index(axis=1, inplace=True)
-    pe_pnul._df.sort_index(axis=0, inplace=True)
+    pe_proj._df = pe_proj._df.sort_index(axis=1)
+    pe_proj._df = pe_proj._df.sort_index(axis=0)
+    pe_pnul._df = pe_pnul._df.sort_index(axis=1)
+    pe_pnul._df = pe_pnul._df.sort_index(axis=0)
 
     diff = 100.0 * ((pe_proj._df - pe_pnul._df) / pe_proj._df)
 

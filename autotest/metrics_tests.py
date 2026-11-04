@@ -17,7 +17,7 @@ def res_and_ens_test():
                         'modelled':mod,
                         'residual':obs-mod,
                         'weight':np.ones(len(t))})
-    res.set_index(res['name'], inplace=True)
+    res = res.set_index(res['name'])
     rng = np.random.RandomState(98)
     res.weight =  [float(i>.5) for i in rng.random(200)]
 

@@ -942,7 +942,7 @@ def new_format_test(tmp_path):
         assert len(pst.output_files) == len(pst_new.output_files)
 
     pst_new.parameter_groups.loc[:,:] = np.nan
-    pst_new.parameter_groups.dropna(inplace=True)
+    pst_new.parameter_groups = pst_new.parameter_groups.dropna()
     pst_new.write(os.path.join(tmp_path, "test.pst"), version=2)
     pst_new = pyemu.Pst(os.path.join(tmp_path, "test.pst"))
 
