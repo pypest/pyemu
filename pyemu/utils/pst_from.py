@@ -3234,7 +3234,7 @@ class PstFrom(object):
             df["tpl_filename"] = pp_tpl
         if "pp_filename" not in df.columns:
             df["pp_filename"] = pp_filename
-        df.set_index("parnme", drop=False, inplace=True)
+        df = df.set_index("parnme", drop=False)
         # pp_locs = df
         # df includes most of the par info for par_dfs and also for
         # relate_parfiles

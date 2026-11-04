@@ -557,7 +557,7 @@ class Ensemble(object):
                     reals[i, idxs] = cov_mean_values + np.dot(a, snv[i, :])
                     #print(np.dot(a, snv[i, :]).max())
         df = pd.DataFrame(reals, columns=mean_values.index.values)
-        df.dropna(inplace=True, axis=1)
+        df = df.dropna(axis=1)
         return df
 
     def _draw_new_ensemble(self,num_reals,names,include_noise=True,noise_reals=None, rng=None):
@@ -1219,7 +1219,7 @@ class ParameterEnsemble(Ensemble):
                 )
 
         df = pd.DataFrame(arr, index=real_names, columns=pst.par_names)
-        df.dropna(inplace=True, axis=1)
+        df = df.dropna(axis=1)
         df.loc[:, li] = 10.0 ** df.loc[:, li]
         new_pe = cls(pst=pst, df=df)
         return new_pe
@@ -1281,7 +1281,7 @@ class ParameterEnsemble(Ensemble):
                 )
 
         df = pd.DataFrame(arr, index=real_names, columns=pst.par_names)
-        df.dropna(inplace=True, axis=1)
+        df = df.dropna(axis=1)
         df.loc[:, li] = 10.0 ** df.loc[:, li]
 
         new_pe = cls(pst=pst, df=df)
@@ -1385,7 +1385,7 @@ class ParameterEnsemble(Ensemble):
             gset = how_groups["gaussian"]
             par_gaussian = par_org.loc[gset, :]
             # par_gaussian.sort_values(by="parnme", inplace=True)
-            par_gaussian.sort_index(inplace=True)
+            par_gaussian = par_gaussian.sort_index()
             pst.parameter_data = par_gaussian
 
             if cov is not None:
@@ -1409,7 +1409,7 @@ class ParameterEnsemble(Ensemble):
         if len(how_groups["uniform"]) > 0:
             par_uniform = par_org.loc[how_groups["uniform"], :]
             # par_uniform.sort_values(by="parnme",inplace=True)
-            par_uniform.sort_index(inplace=True)
+            par_uniform = par_uniform.sort_index()
             pst.parameter_data = par_uniform
             pe_uniform = ParameterEnsemble.from_uniform_draw(pst, num_reals=num_reals, rng=rng)
             pes.append(pe_uniform)
@@ -1417,7 +1417,7 @@ class ParameterEnsemble(Ensemble):
         if len(how_groups["triangular"]) > 0:
             par_tri = par_org.loc[how_groups["triangular"], :]
             # par_tri.sort_values(by="parnme", inplace=True)
-            par_tri.sort_index(inplace=True)
+            par_tri = par_tri.sort_index()
             pst.parameter_data = par_tri
             pe_tri = ParameterEnsemble.from_triangular_draw(pst, num_reals=num_reals, rng=rng)
             pes.append(pe_tri)
@@ -1994,7 +1994,7 @@ class ParameterEnsemble(Ensemble):
             ).max() > 0.0:
                 drop.append(ridx)
         self.loc[drop, :] = np.nan
-        self.dropna(inplace=True)
+        self._df = self._df.dropna()
 
     def _enforce_reset(self, bound_tol):
         """enforce parameter bounds on the ensemble by resetting

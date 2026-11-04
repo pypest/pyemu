@@ -703,7 +703,7 @@ def geostatistical_prior_builder(
                     )
                     continue
                 # df_zone.sort_values(by="parnme",inplace=True)
-                df_zone.sort_index(inplace=True)
+                df_zone = df_zone.sort_index()
                 if verbose:
                     print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x, df_zone.y, df_zone.parnme)
@@ -4457,7 +4457,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",t_d
                 #print(X_train[:,ii])
                 #print(y_train)
                 ddf = df[[input_name,output_name,"predmean","predstd","isverf"]].copy()
-                ddf.sort_values(by=input_name,inplace=True)
+                ddf = ddf.sort_values(by=input_name)
                 ax.scatter(ddf.loc[ddf.isverf==0,input_name],ddf.loc[ddf.isverf==0,output_name],marker=".",c="r",label="training")
                 if nverf > 0:
                     ax.scatter(ddf.loc[ddf.isverf==1,input_name],ddf.loc[ddf.isverf==1,output_name],marker="^",c="c",label="verf")
@@ -5095,9 +5095,9 @@ def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
     if dsi.dsivc_args.get("track_stack",False):
         # write long form oe
         stack = oe._df.reset_index().melt(id_vars="real_name")
-        stack.rename(columns={"value":"obsval"},inplace=True)
+        stack = stack.rename(columns={"value":"obsval"})
         stack['obsnme'] = stack.apply(lambda x: x.variable+"_real:"+x.real_name,axis=1)
-        stack.set_index("obsnme",inplace=True)
+        stack = stack.set_index("obsnme")
         stack = stack.obsval
         out_file = os.path.join(md_ies,"dsi.stack.csv")
         stack.to_csv(out_file,float_format="%.6e")
@@ -5105,9 +5105,9 @@ def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
     #get user-specified quantiles
     percentiles = dsi.dsivc_args.get("percentiles",[0.25,0.75,0.5])
     stack_stats = oe._df.describe(percentiles=percentiles).reset_index().melt(id_vars="index")
-    stack_stats.rename(columns={"value":"obsval","index":"stat"},inplace=True)
+    stack_stats = stack_stats.rename(columns={"value":"obsval","index":"stat"})
     stack_stats['obsnme'] = stack_stats.apply(lambda x: x.variable+"_stat:"+x.stat,axis=1)
-    stack_stats.set_index("obsnme",inplace=True)
+    stack_stats = stack_stats.set_index("obsnme")
     stack_stats = stack_stats.obsval
     out_file = os.path.join(md_ies,"dsi.stack_stats.csv")
     stack_stats.to_csv(out_file,float_format="%.6e")

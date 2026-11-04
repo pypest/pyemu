@@ -704,14 +704,14 @@ def generic_pst(par_names=["par1"], obs_names=["obs1"], addreg=False):
     )
     par_data.loc[:, "parnme"] = par_names
     par_data.index = par_names
-    par_data.sort_index(inplace=True)
+    par_data = par_data.sort_index()
     new_pst.parameter_data = par_data
     obs_data = _populate_dataframe(
         obs_names, new_pst.obs_fieldnames, new_pst.obs_defaults, new_pst.obs_dtype
     )
     obs_data.loc[:, "obsnme"] = obs_names
     obs_data.index = obs_names
-    obs_data.sort_index(inplace=True)
+    obs_data = obs_data.sort_index()
     new_pst.observation_data = obs_data
 
     # new_pst.template_files = ["file.tpl"]

@@ -3590,7 +3590,7 @@ class Pst(object):
             obsg_df.loc[:, "obgnme"] = obsg_df.obgnme.apply(
                 lambda x: group_names.pop(x, x)
             )
-        obsg_df.sort_values(by="obgnme", inplace=True, ascending=True)
+        obsg_df = obsg_df.sort_values(by="obgnme", ascending=True)
         obsg_df.columns = obsg_df.columns.map(lambda x: labels[x])
 
         preamble = (
