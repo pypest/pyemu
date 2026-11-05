@@ -116,9 +116,9 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
 
   # Newest release of every dependency that pyproject.toml allows, ignoring
-  # uv.lock: what a fresh `pip install pyemu` gets today (currently pandas 3).
-  # The pyemuCI matrix above tests the locked stack (pandas 2), so this is the
-  # job that tells us when a new upstream release breaks us.
+  # uv.lock (and the Dependabot cooldown): what a fresh `pip install pyemu` gets
+  # today. The pyemuCI matrix above tests the locked stack, so this is the job
+  # that tells us when a new upstream release breaks us.
   # Non-blocking for now; drop `continue-on-error` once it has been stable.
   pyemuLatest:
     name: autotests (latest deps)
@@ -138,11 +138,56 @@ jobs:
     - name: Install the project with the newest allowed dependencies [with TensorFlow]
       run: |
         uv sync --upgrade --extra optional --extra tests --extra tf
-        uv pip list
 
-    - name: Check this job is really testing pandas 3
+    # `uv pip list` plus release dates: shows which brand-new releases this run
+    # picked up. The dates come from the upload times in a PEP 751 pylock.toml
+    # exported from the lock `uv sync` just wrote (a standard format, rather than
+    # uv.lock's own layout). Informational only: if anything fails it warns and
+    # falls back to a plain `uv pip list`.
+    - name: List the installed packages with release dates (newest first)
       run: |
-        uv run python -c "import pandas; print('pandas', pandas.__version__); assert int(pandas.__version__.split('.')[0]) >= 3, 'expected pandas>=3 in the latest-deps job'"
+        {
+          uv export --frozen --format pylock.toml --all-extras --all-groups --no-emit-project -q -o "$RUNNER_TEMP/pylock.toml" &&
+          uv run python - "$RUNNER_TEMP/pylock.toml" <<'EOF'
+        import importlib.metadata as md
+        import sys
+        import tomllib
+        from datetime import datetime, timezone
+
+        from packaging.utils import canonicalize_name
+
+        def as_datetime(t):  # a TOML datetime in pylock.toml; tolerate an ISO string too
+            return t if isinstance(t, datetime) else datetime.fromisoformat(t.replace("Z", "+00:00"))
+
+        lock = tomllib.load(open(sys.argv[1], "rb"))
+        released = {}  # (name, version) -> first upload time of that version
+        for p in lock["packages"]:
+            files = p.get("wheels", []) + ([p["sdist"]] if p.get("sdist") else [])
+            times = [as_datetime(f["upload-time"]) for f in files if f.get("upload-time")]
+            if times:
+                key = (canonicalize_name(p["name"]), p.get("version"))
+                released[key] = min(times + ([released[key]] if key in released else []))
+
+        now = datetime.now(timezone.utc)
+        rows = {}
+        for dist in md.distributions():
+            if dist.metadata["Name"]:
+                name = canonicalize_name(dist.metadata["Name"])
+                rows[name] = (released.get((name, dist.version)), dist.version)
+
+        # newest release first; packages missing from the lock (e.g. pyemu itself) last
+        order = sorted(rows.items(),
+                       key=lambda kv: (kv[1][0] is None, -(kv[1][0].timestamp() if kv[1][0] else 0)))
+        print(f"{'package':34s} {'version':16s} {'released':11s} age (days)")
+        for name, (when, version) in order:
+            if when is None:
+                print(f"{name:34s} {version:16s} {'-':11s} -")
+            else:
+                age = (now - when).days
+                print(f"{name:34s} {version:16s} {when:%Y-%m-%d}  {age:>5d}{'  *' if age < 7 else ''}")
+        print("* released less than 7 days ago (the repo's Dependabot cooldown)")
+        EOF
+        } || { echo "::warning::could not list release dates, falling back to plain uv pip list"; uv pip list; }
 
     - name: Install Modflow executables
       uses: modflowpy/install-modflow-action@v1
