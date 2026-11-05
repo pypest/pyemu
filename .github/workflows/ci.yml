@@ -98,13 +98,19 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    # The notebooks normally take ~10 minutes and no single cell takes over a
+    # minute, but one that starts a PEST++ master and python workers can hang
+    # (the master waits forever for a run that never comes back), and nbval's
+    # default cell timeout is 2000 s. Cap a cell at 5 minutes and the step at 30.
     - name: Test Notebooks
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13 }}
+      timeout-minutes: 30
       shell: bash -l {0}
       run: |
         uv run pytest examples/*.ipynb \
         -rA -vv --tb=native \
         --nbval-lax --dist loadscope \
+        --nbval-cell-timeout=300 \
         --cov=pyemu --cov-report=xml --cov-append
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
