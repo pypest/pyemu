@@ -2486,7 +2486,7 @@ class PstFromFlopyModel(object):
                 "parnme": bc_parnme,
             }
         )
-        tds = pd.to_timedelta(np.cumsum(self.m.dis.perlen.array), unit="d")
+        tds = pd.to_timedelta(np.cumsum(self.m.dis.perlen.array), unit="D")
         dts = pd.to_datetime(self.m._start_datetime) + tds
         df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
         df.loc[:, "timedelta"] = df.kper.apply(lambda x: tds[x])
@@ -2628,7 +2628,7 @@ class PstFromFlopyModel(object):
                 self.logger.warn(
                     "duplicate entries in list pak {0}...collapsing".format(pak)
                 )
-                df.drop_duplicates(subset="idx", inplace=True)
+                df = df.drop_duplicates(subset="idx")
             df.index = df.idx
             pak_dfs[pak] = df
 

@@ -188,12 +188,12 @@ def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
     # hyd_df.loc[:,"datetime"] = hyd_df.index
     hyd_df["totim"] = hyd_df.index.map(lambda x: x.strftime("%Y%m%d"))
 
-    hyd_df.rename(columns={"totim": "datestamp"}, inplace=True)
+    hyd_df = hyd_df.rename(columns={"totim": "datestamp"})
 
     # reshape into a single column
     hyd_df = pd.melt(hyd_df, id_vars="datestamp")
 
-    hyd_df.rename(columns={"value": "obsval"}, inplace=True)
+    hyd_df = hyd_df.rename(columns={"value": "obsval"})
 
     hyd_df["obsnme"] = [
         i.lower() + "_" + j.lower() for i, j in zip(hyd_df.variable, hyd_df.datestamp)
@@ -678,7 +678,7 @@ def setup_hds_timeseries(
             df = pd.DataFrame(data=bf.get_ts((k, i, j)), columns=["totim", site])
 
         if model is not None:
-            dts = start + pd.to_timedelta(df.totim, unit="d")
+            dts = start + pd.to_timedelta(df.totim, unit="D")
             df["totim"] = dts
         # print(df)
         f_config.write("{0},{1},{2},{3}\n".format(site, k, i, j))
@@ -845,7 +845,7 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
         warnings.warn("NANs in processed timeseries file", PyemuWarning)
         if fill.upper() != "NONE":
             fill = float(fill)
-            df.fillna(fill, inplace=True)
+            df = df.fillna(fill)
     # print(df)
     df.to_csv(bf_file + "_timeseries.processed", sep=" ")
     if postprocess_inact is not None:
@@ -1315,7 +1315,7 @@ def setup_sft_obs(sft_file, ins_file=None, start_datetime=None, times=None, ncom
     idx = df.time.apply(lambda x: x in times)
     if start_datetime is not None:
         start_datetime = pd.to_datetime(start_datetime)
-        df["time_str"] = pd.to_timedelta(df.time, unit="d") + start_datetime
+        df["time_str"] = pd.to_timedelta(df.time, unit="D") + start_datetime
         df["time_str"] = df.time_str.dt.strftime("%Y%m%d")
         # print(df.time_str)
     else:
@@ -1540,7 +1540,7 @@ def setup_sfr_seg_parameters(
             data={c: 1.0 for c in tmp_par_cols.keys()},
             index=list(m.sfr.segment_data.keys()),
         )
-        tmp_df.sort_index(inplace=True)
+        tmp_df = tmp_df.sort_index()
         tmp_df.to_csv(os.path.join(model_ws, "sfr_seg_temporal_pars.dat"))
     for par_col in set(cols + list(tmp_par_cols.keys())):
         print(par_col)
@@ -1582,7 +1582,7 @@ def setup_sfr_seg_parameters(
     df = pd.DataFrame(
         {"parnme": pnames, "org_value": pvals, "tpl_str": tpl_str}, index=pnames
     )
-    df.drop_duplicates(inplace=True)
+    df = df.drop_duplicates()
     if df.empty:
         warnings.warn(
             "No spatial sfr segment parameters have been set up, "
@@ -1743,7 +1743,7 @@ def setup_sfr_reach_parameters(nam_file, model_ws=".", par_cols=["strhc1"]):
     df = pd.DataFrame(
         {"parnme": pnames, "org_value": pvals, "tpl_str": tpl_str}, index=pnames
     )
-    df.drop_duplicates(inplace=True)
+    df = df.drop_duplicates()
     if df.empty:
         warnings.warn(
             "No sfr reach parameters have been set up, either none of {0} were found or all were zero.".format(
@@ -1986,7 +1986,7 @@ def setup_sfr_obs(
     if model is not None:
         dts = (
             pd.to_datetime(model.start_datetime)
-            + pd.to_timedelta(np.cumsum(model.dis.perlen.array), unit="d")
+            + pd.to_timedelta(np.cumsum(model.dis.perlen.array), unit="D")
         ).date
         df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
         df.loc[:, "time_str"] = df.datetime.apply(lambda x: x.strftime("%Y%m%d"))
@@ -2047,8 +2047,10 @@ def apply_sfr_obs():
 
     assert df_key.iloc[0, 0] == "sfr_out_file", df_key.iloc[0, :]
     sfr_out_file = df_key.iloc[0, 1]
-    df_key = df_key.iloc[1:, :]
-    df_key.loc[:, "segment"] = df_key.segment.apply(np.int64)
+    df_key = df_key.iloc[1:, :].copy()
+    # replace the column (not .loc[:, col] = ...): the header row made it
+    # text, and a pandas 3 str column rejects the ints
+    df_key["segment"] = df_key.segment.apply(np.int64)
     df_key.index = df_key.segment
     seg_group_dict = df_key.groupby(df_key.obs_base).groups
 
@@ -2066,7 +2068,7 @@ def apply_sfr_obs():
             # print(obs_base,agg)
             results.append([kper, obs_base, agg["flaqx"], agg["flout"]])
     df = pd.DataFrame(data=results, columns=["kper", "obs_base", "flaqx", "flout"])
-    df.sort_values(by=["kper", "obs_base"], inplace=True)
+    df = df.sort_values(by=["kper", "obs_base"])
     df.to_csv(sfr_out_file + ".processed", sep=" ", index=False)
     return df
 
@@ -2308,7 +2310,7 @@ def setup_sfr_reach_obs(
     if model is not None:
         dts = (
             pd.to_datetime(model.start_datetime)
-            + pd.to_timedelta(np.cumsum(model.dis.perlen.array), unit="d")
+            + pd.to_timedelta(np.cumsum(model.dis.perlen.array), unit="D")
         ).date
         df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
         df.loc[:, "time_str"] = df.datetime.apply(lambda x: x.strftime("%Y%m%d"))
@@ -2373,8 +2375,10 @@ def apply_sfr_reach_obs():
     assert df_key.iloc[0, 0] == "sfr_out_file", df_key.iloc[0, :]
     sfr_out_file = df_key.iloc[0].reach
     df_key = df_key.iloc[1:, :].copy()
-    df_key.loc[:, "segment"] = df_key.segment.apply(np.int64)
-    df_key.loc[:, "reach"] = df_key.reach.apply(np.int64)
+    # replace the columns (not .loc[:, col] = ...): the header row made them
+    # text, and a pandas 3 str column rejects the ints
+    df_key["segment"] = df_key.segment.apply(np.int64)
+    df_key["reach"] = df_key.reach.apply(np.int64)
     df_key = df_key.set_index("obs_base")
 
     sfr_kper = load_sfr_out(sfr_out_file, df_key)
@@ -2388,7 +2392,7 @@ def apply_sfr_reach_obs():
             ob = df.loc["{0:03d}_{1:03d}".format(sr.segment, sr.reach), :]
             results.append([kper, sr.Index, ob["flaqx"], ob["flout"]])
     df = pd.DataFrame(data=results, columns=["kper", "obs_base", "flaqx", "flout"])
-    df.sort_values(by=["kper", "obs_base"], inplace=True)
+    df = df.sort_values(by=["kper", "obs_base"])
     df.to_csv(sfr_out_file + ".reach_processed", sep=" ", index=False)
     return df
 
@@ -2559,7 +2563,7 @@ def setup_gage_obs(gage_file, ins_file=None, start_datetime=None, times=None):
     if start_datetime is not None:
         # convert times to usable observation times
         start_datetime = pd.to_datetime(start_datetime)
-        df["time_str"] = pd.to_timedelta(df.time, unit="d") + start_datetime
+        df["time_str"] = pd.to_timedelta(df.time, unit="D") + start_datetime
         df["time_str"] = df.time_str.dt.strftime("%Y%m%d")
     else:
         df["time_str"] = df.time.apply(lambda x: f"{x:08.2f}")

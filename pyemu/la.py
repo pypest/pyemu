@@ -1083,7 +1083,7 @@ class LinearAnalysis(object):
             {"obnme": self.jco.to_dataframe().index, "cso": cso}
         )
         cso_df.index = cso_df["obnme"]
-        cso_df.drop("obnme", axis=1, inplace=True)
+        cso_df = cso_df.drop("obnme", axis=1)
         return cso_df
 
     def get_obs_competition_dataframe(self):

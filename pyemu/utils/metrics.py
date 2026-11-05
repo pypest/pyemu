@@ -354,7 +354,7 @@ def calc_metric_ensemble(
         subset_realizations = list(subset_realizations)
 
     if "real_name" in ens.columns:
-        ens.set_index("real_name", inplace=True)
+        ens = ens.set_index("real_name")
 
     if not isinstance(pst, pyemu.Pst):
         raise Exception("pst object must be of type pyemu.Pst")

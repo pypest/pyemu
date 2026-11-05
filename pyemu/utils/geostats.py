@@ -1300,7 +1300,7 @@ class OrdinaryKrigeOrg(object):
         """private: find nearby points"""
         #  calc dist from this interp point to all point data...slow
         dist = pd.Series((ptx_array - ix) ** 2 + (pty_array - iy) ** 2, ptnames)
-        dist.sort_values(inplace=True)
+        dist = dist.sort_values()
         dist = dist.loc[dist <= sqradius]
         return dist
 

@@ -942,7 +942,7 @@ def new_format_test(tmp_path):
         assert len(pst.output_files) == len(pst_new.output_files)
 
     pst_new.parameter_groups.loc[:,:] = np.nan
-    pst_new.parameter_groups.dropna(inplace=True)
+    pst_new.parameter_groups = pst_new.parameter_groups.dropna()
     pst_new.write(os.path.join(tmp_path, "test.pst"), version=2)
     pst_new = pyemu.Pst(os.path.join(tmp_path, "test.pst"))
 
@@ -1575,6 +1575,7 @@ def interface_check_test():
 
 
 def results_ies_1_test():
+    import pandas as pd
     import pyemu
     m_d = os.path.join("pst", "master_ies1")
     r = pyemu.Results(m_d=m_d)
@@ -1604,7 +1605,8 @@ def results_ies_1_test():
     df = r.ies.weights
 
     assert df is not None
-    assert df.index.dtype == 'object'
+    # string index: dtype is object in pandas 2 and str in pandas 3
+    assert pd.api.types.is_string_dtype(df.index.dtype)
 
     # various phi dfs
     df = r.ies.philambda
