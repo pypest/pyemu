@@ -64,8 +64,9 @@ def full_exe_ref_dict():
     Get a dictionary of executable references for the project.
     """
     d = {}
+    # MODFLOW-ORG/executables release 30.0 renamed mfusg_gsi to mfusgt
     for exe_name in [
-        "mfnwt", "mfusg_gsi", "mf6",
+        "mfnwt", "mfusgt", "mfusg_gsi", "mf6",
         "pestpp-ies", "pestpp-sen", "pestpp-opt", "pestpp-glm",
         "pestpp-mou", "pestpp-da", "pestpp-sqp", "pestpp-swp"
     ]:

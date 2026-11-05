@@ -134,7 +134,7 @@ with pytest-xdist, local runs can be parallelized:
 Python dependencies for the test suite can be installed via `pip install -e .[optional, test]` (they are recorded in [`./pyproject.toml`](./pyproject.toml)). You should also include binaries for various integrations:
 
 * [PEST++](https://github.com/usgs/pestpp/releases), e.g. `pestpp-ies`, `pestpp-mou`, etc. These can be automatically installed via the `get-pestpp` script included with pyEMU (see above).
-* [MODFLOW exectuables](https://github.com/MODFLOW-ORG/executables), i.e. `mf6`, `mfnwt`, `mfusg_gsi`. These can be automatically installed using flopy's [`get-modflow`](https://flopy.readthedocs.io/en/latest/md/get_modflow.html) command. 
+* [MODFLOW exectuables](https://github.com/MODFLOW-ORG/executables), i.e. `mf6`, `mfnwt`, `mfusgt` (called `mfusg_gsi` in releases before 30.0). These can be automatically installed using flopy's [`get-modflow`](https://flopy.readthedocs.io/en/latest/md/get_modflow.html) command. 
 
 These should be placed in the relevant `./bin/win`, `./bin/linux`, or `./bin/mac` directories (depending on your OS).
 
