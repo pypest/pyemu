@@ -4541,7 +4541,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",t_d
         # why is it getting so strict?!  isn't python duck-typed?
         if col in gpst.observation_data.columns and \
                 gpst.observation_data.dtypes[col] != pst.observation_data.dtypes[col]:
-            gpst.observation_data[col] = gpst.obsveration_data[col].astype(pst.observation_data.dtypes[col])
+            gpst.observation_data[col] = gpst.observation_data[col].astype(pst.observation_data.dtypes[col])
         gpst.observation_data.loc[output_names,col] = pst.observation_data.loc[output_names,col].values
     if include_emulated_std_obs:
         stdobs = [o for o in gpst.obs_names if o.endswith("_gprstd")]
