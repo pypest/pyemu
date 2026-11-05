@@ -172,3 +172,83 @@ jobs:
         --timeout=1200
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Oldest version of every direct dependency that pyproject.toml allows (uv's
+  # `lowest-direct` resolution), on the oldest supported python. Checks that the
+  # lower bounds in pyproject.toml are really supported - neither the locked
+  # matrix nor the latest-deps job would notice if one stopped being true.
+  # UV_RESOLUTION is set for the whole job because otherwise the first plain
+  # `uv run` re-syncs the environment back to the newest versions.
+  # Non-blocking for now; drop `continue-on-error` once it has been stable.
+  pyemuLowest:
+    name: autotests (lowest deps, py3.11)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    continue-on-error: true
+    env:
+      UV_RESOLUTION: lowest-direct
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v7
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: "3.11"  # oldest supported python
+
+    - name: Install the project with the lowest allowed dependencies [with TensorFlow]
+      run: |
+        uv sync --upgrade --extra optional --extra tests --extra tf
+        uv pip list
+
+    - name: Check this job is really testing the lowest allowed versions
+      run: |
+        uv run python - <<'EOF'
+        import importlib.metadata as md
+        import tomllib
+
+        from packaging.requirements import Requirement
+
+        deps = tomllib.load(open("pyproject.toml", "rb"))["project"]["dependencies"]
+        bad = []
+        for d in deps:
+            r = Requirement(d)
+            if r.marker is not None and not r.marker.evaluate():
+                continue
+            floors = [s.version for s in r.specifier if s.operator == ">="]
+            installed = md.version(r.name)
+            print(f"{r.name}: installed {installed}, lowest allowed {floors[0] if floors else 'n/a'}")
+            if floors and installed != floors[0]:
+                bad.append((r.name, installed, floors[0]))
+        assert not bad, f"not at the lowest supported version: {bad}"
+        EOF
+
+    - name: Install Modflow executables
+      uses: modflowpy/install-modflow-action@v1
+
+    - name: Add executables directory to path
+      shell: bash
+      run: |
+        echo "adding bin dir '$MODFLOW_BIN_PATH' to path"
+        echo "$MODFLOW_BIN_PATH" >> $GITHUB_PATH
+        echo "adding bin dir '$HOME/.local/bin' to path"
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install PEST++ suite using get-pestpp
+      shell: bash -l {0}
+      run: |
+        uv run get-pestpp --owner pestpp --repo pestpp-nightly-builds :home
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run tests
+      shell: bash -l {0}
+      run: |
+        uv run pytest autotest \
+        -n=auto \
+        -rA -vv --tb=native \
+        --durations=20 \
+        --timeout=1200
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
