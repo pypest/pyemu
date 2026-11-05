@@ -17,9 +17,14 @@ license = "BSD-3-Clause"
 classifiers = [
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Scientific/Engineering :: Hydrology",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     # some messyness to try and avoid some blas versions
     "numpy>2.3.4 ; python_full_version >= '3.14' and sys_platform=='linux'",
