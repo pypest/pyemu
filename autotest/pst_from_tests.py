@@ -17,7 +17,8 @@ ies_exe_path = exepath_dict['pestpp-ies']
 mf_exe_path = exepath_dict['mfnwt']
 mf6_exe_path = exepath_dict['mf6']
 pp_exe_path = exepath_dict['pestpp-glm']
-usg_exe_path = exepath_dict["mfusg_gsi"]
+# MODFLOW-ORG/executables release 30.0 renamed mfusg_gsi to mfusgt: use whichever is installed
+usg_exe_path = exepath_dict["mfusgt"] or exepath_dict["mfusg_gsi"]
 
 def _get_port():
     import socket
