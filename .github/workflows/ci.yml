@@ -114,3 +114,61 @@ jobs:
       with:
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
+
+  # Newest release of every dependency that pyproject.toml allows, ignoring
+  # uv.lock: what a fresh `pip install pyemu` gets today (currently pandas 3).
+  # The pyemuCI matrix above tests the locked stack (pandas 2), so this is the
+  # job that tells us when a new upstream release breaks us.
+  # Non-blocking for now; drop `continue-on-error` once it has been stable.
+  pyemuLatest:
+    name: autotests (latest deps)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    continue-on-error: true
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v7
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: "3.13"  # newest python TensorFlow has wheels for
+
+    - name: Install the project with the newest allowed dependencies [with TensorFlow]
+      run: |
+        uv sync --upgrade --extra optional --extra tests --extra tf
+        uv pip list
+
+    - name: Check this job is really testing pandas 3
+      run: |
+        uv run python -c "import pandas; print('pandas', pandas.__version__); assert int(pandas.__version__.split('.')[0]) >= 3, 'expected pandas>=3 in the latest-deps job'"
+
+    - name: Install Modflow executables
+      uses: modflowpy/install-modflow-action@v1
+
+    - name: Add executables directory to path
+      shell: bash
+      run: |
+        echo "adding bin dir '$MODFLOW_BIN_PATH' to path"
+        echo "$MODFLOW_BIN_PATH" >> $GITHUB_PATH
+        echo "adding bin dir '$HOME/.local/bin' to path"
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install PEST++ suite using get-pestpp
+      shell: bash -l {0}
+      run: |
+        uv run get-pestpp --owner pestpp --repo pestpp-nightly-builds :home
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run tests
+      shell: bash -l {0}
+      run: |
+        uv run pytest autotest \
+        -n=auto \
+        -rA -vv --tb=native \
+        --durations=20 \
+        --timeout=1200
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
