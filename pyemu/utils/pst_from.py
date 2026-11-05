@@ -2658,6 +2658,10 @@ class PstFrom(object):
 
                 if try_use_ppu:
                     if prep_pp_hyperpars:
+                        # explicit pilot point locations can come without values; the
+                        # hyperpar setup writes and applies the pilot point file right away
+                        if "parval1" not in pp_df.columns:
+                            pp_df.loc[:, "parval1"] = initial_value
                         # prep hyperparameters and build configuration dataframe
                         # writes config file to `pg` + ".config.csv"
                         # also runs apply function `apply_ppu_hyperpars()`
