@@ -6,7 +6,9 @@ def constr(x):
 
 def helper(func=constr,pvals=None):
     if pvals is None:
-        pvals = pd.read_csv("dv.dat", sep=r'\s+',index_col=0, header=None, names=["parnme","parval1"]).values
+        # copy: with pandas 3 copy-on-write `.values` is read-only, and the objectives
+        # below are views of pvals that get modified in place
+        pvals = pd.read_csv("dv.dat", sep=r'\s+',index_col=0, header=None, names=["parnme","parval1"]).to_numpy(copy=True)
     #obj1,obj2 = func(pdf.values)
     objs,constrs = func(pvals)
     
