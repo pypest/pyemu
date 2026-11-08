@@ -102,6 +102,13 @@ module-root = ""
 [tool.uv.sources]
 pyemu = { workspace = true }
 
+[tool.uv]
+# coverage 7.13.1+ loses the notebook kernels' coverage under nbval + pytest-cov when a notebook starts a child Python
+# process (e.g. a PEST++ run whose model command is `python forward_run.py`): `coverage combine` skips the data file
+# holding the kernels' measurements as "duplicate data". Reported upstream
+# (https://github.com/coveragepy/coveragepy/issues/2370); remove this pin once fixed.
+constraint-dependencies = ["coverage<7.13.1"]
+
 [tool.pytest.ini_options]
 testpaths = [
     "autotest",
