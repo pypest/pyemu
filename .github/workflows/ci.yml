@@ -115,9 +115,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    # Upload even if the notebook step failed or timed out, so a hung notebook does
+    # not also drop the autotest coverage; only skip when the run was cancelled.
     - name: Codecov
+      if: ${{ !cancelled() }}
       uses: codecov/codecov-action@v7
       with:
+        files: coverage.xml
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
 
