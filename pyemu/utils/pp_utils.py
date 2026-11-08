@@ -822,6 +822,8 @@ def prep_pp_hyperpars(file_tag, pp_filename, pp_info,out_filename, grid_dict,
 
     if isinstance(arr_shape, int):
         arr_shape = [arr_shape]
+    # the result is written in the shape of the model file, e.g. (ncpl,) for a DISV array
+    out_shape = tuple(arr_shape)
     if len(arr_shape) == 1 and isinstance(arr_shape, (tuple, list)):
         arr_shape = (1,arr_shape[0])
 
@@ -877,12 +879,18 @@ def prep_pp_hyperpars(file_tag, pp_filename, pp_info,out_filename, grid_dict,
     krigtype = 1  #ordinary
     config_df.loc["vartype","value"] = vartype
     config_df.loc["krigtype","value"] = krigtype
-    config_df.loc["shape", "value"] = arr_shape
+    config_df.loc["shape", "value"] = out_shape
 
     keys = list(pp_options.keys())
     keys.sort()
     for k in keys:
         if k == 'zone_array':
+            continue
+        # tables and mappings do not fit in one config entry, and are already written to
+        # their own files: pilot point locations (pp_locs, or pp_space as a dataframe) to
+        # pp_filename, and an unstructured spatial_reference (a dict of node: (x, y)) to
+        # gridinfo_filename
+        if isinstance(pp_options[k], (pd.DataFrame, pd.Series, np.ndarray, dict)):
             continue
         config_df.loc[k,"value"] = pp_options[k]
 
@@ -943,7 +951,7 @@ def apply_ppu_hyperpars(config_df_filename):
         raise NotImplementedError("only Ordinary Kriging supported (for now)")
 
     tup_string = config_dict["shape"]
-    shape = tuple(int(x) for x in tup_string[1:-1].split(','))
+    shape = tuple(int(x) for x in tup_string.strip("()[] ").split(',') if x.strip())
 
     # run in context so that we can keep ppulib alive
     with pyemu.geostats.OrdinaryKrigePPU(None, pp_info, express=True) as krige:

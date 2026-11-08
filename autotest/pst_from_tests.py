@@ -5703,6 +5703,45 @@ def test_hyperpars(tmp_path):
     #     ax.set_title(Path(f).stem)
 
 
+@pytest.mark.parametrize("grid", ["structured", "dict"])
+def test_hyperpars_explicit_pp(tmp_path, grid):
+    """prep_hyperpars with explicit pilot points that, as documented for pp_space, have
+    only name, x, y and zone columns (no parval1), on a structured grid and with a dict
+    (unstructured) spatial reference."""
+    pytest.importorskip("pypestutils")
+    n, d = 20, 50.0
+    if grid == "structured":
+        sr = pyemu.helpers.SpatialReference(delr=np.full(n, d), delc=np.full(n, d),
+                                            xul=0.0, yul=n * d)
+        shape = (n, n)
+    else:
+        x, y = np.meshgrid((np.arange(n) + 0.5) * d, (np.arange(n)[::-1] + 0.5) * d)
+        sr = {i: xy for i, xy in enumerate(zip(x.ravel(), y.ravel()))}
+        shape = (1, n * n)
+    org_d = Path(tmp_path, "org")
+    org_d.mkdir()
+    np.savetxt(Path(org_d, "k.txt"), np.ones(shape))
+    gx, gy = np.meshgrid(np.arange(100.0, 1000.0, 200.0), np.arange(100.0, 1000.0, 200.0))
+    pp_df = pd.DataFrame({"name": [f"pp{i}" for i in range(gx.size)], "x": gx.ravel(),
+                          "y": gy.ravel(), "zone": 1})
+    pf = PstFrom(original_d=org_d, new_d=Path(tmp_path, "template"),
+                 remove_existing=True, spatial_reference=sr, zero_based=True)
+    gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=300.0))
+    pf.add_parameters("k.txt", par_type="pilotpoints", par_name_base="kpp", pargp="kpp",
+                      zone_array=np.ones(shape, dtype=int), geostruct=gs,
+                      upper_bound=10.0, lower_bound=0.1,
+                      pp_options={"pp_space": pp_df, "prep_hyperpars": True})
+    pst = pf.build_pst()
+    assert len(pst.parameter_data) == len(pp_df)
+    bd = os.getcwd()
+    os.chdir(pf.new_d)
+    try:
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file="mult2model_info.csv")
+    finally:
+        os.chdir(bd)
+    np.testing.assert_allclose(np.loadtxt(Path(pf.new_d, "k.txt")), 1.0)
+
+
 def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     import numpy as np
     import pandas as pd
