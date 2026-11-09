@@ -1878,15 +1878,12 @@ class Matrix(object):
             This method is used by pyemu.Ensemble.to_binary()
 
         """
-        if self.isdiagonal:
-            # raise NotImplementedError()
-            self.__x = self.as_2d
-            self.isdiagonal = False
+        x = self.as_2d
         if droptol is not None:
-            self.x[np.abs(self.x) < droptol] = 0.0
+            x = np.where(np.abs(x) < droptol, 0.0, x)
         f = open(filename, "wb")
         # print("counting nnz")
-        nnz = np.count_nonzero(self.x)  # number of non-zero entries
+        nnz = np.count_nonzero(x)  # number of non-zero entries
         # write the header
         header = np.array(
             (self.shape[1], self.shape[0], nnz), dtype=self.binary_header_dt
@@ -1894,10 +1891,10 @@ class Matrix(object):
         header.tofile(f)
         # get the indices of non-zero entries
         # print("getting nnz idxs")
-        row_idxs, col_idxs = np.nonzero(self.x)
+        row_idxs, col_idxs = np.nonzero(x)
 
         if chunk is None:
-            flat = self.x[row_idxs, col_idxs].flatten()
+            flat = x[row_idxs, col_idxs].flatten()
             data = np.rec.fromarrays(
                 [row_idxs, col_idxs, flat], dtype=self.coo_rec_dt
             )
@@ -1908,7 +1905,7 @@ class Matrix(object):
             while True:
                 # print(row_idxs[start],row_idxs[end])
                 # print("chunk",start,end)
-                flat = self.x[row_idxs[start:end], col_idxs[start:end]].flatten()
+                flat = x[row_idxs[start:end], col_idxs[start:end]].flatten()
                 data = np.rec.fromarrays(
                     [row_idxs[start:end], col_idxs[start:end], flat],
                     dtype=self.coo_rec_dt,
@@ -2030,29 +2027,26 @@ class Matrix(object):
 
         if np.any(np.isnan(self.x)):
             raise Exception("Matrix.to_binary(): nans found")
-        if self.isdiagonal:
-            # raise NotImplementedError()
-            self.__x = self.as_2d
-            self.isdiagonal = False
+        x = self.as_2d
         if droptol is not None:
-            self.x[np.abs(self.x) < droptol] = 0.0
+            x = np.where(np.abs(x) < droptol, 0.0, x)
         f = open(filename, "wb")
-        nnz = np.count_nonzero(self.x)  # number of non-zero entries
+        nnz = np.count_nonzero(x)  # number of non-zero entries
         # write the header
         header = np.array(
             (-self.shape[1], -self.shape[0], nnz), dtype=self.binary_header_dt
         )
         header.tofile(f)
         # get the indices of non-zero entries
-        row_idxs, col_idxs = np.nonzero(self.x)
+        row_idxs, col_idxs = np.nonzero(x)
         icount = row_idxs + 1 + col_idxs * self.shape[0]
         # flatten the array
-        # flat = self.x[row_idxs, col_idxs].flatten()
+        # flat = x[row_idxs, col_idxs].flatten()
         # zip up the index position and value pairs
         # data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
 
         if chunk is None:
-            flat = self.x[row_idxs, col_idxs].flatten()
+            flat = x[row_idxs, col_idxs].flatten()
             data = np.rec.fromarrays([icount, flat], dtype=self.binary_rec_dt)
             # write
             data.tofile(f)
@@ -2060,7 +2054,7 @@ class Matrix(object):
             start, end = 0, min(chunk, row_idxs.shape[0])
             while True:
                 # print(row_idxs[start],row_idxs[end])
-                flat = self.x[row_idxs[start:end], col_idxs[start:end]].flatten()
+                flat = x[row_idxs[start:end], col_idxs[start:end]].flatten()
                 data = np.rec.fromarrays(
                     [icount[start:end], flat], dtype=self.binary_rec_dt
                 )
