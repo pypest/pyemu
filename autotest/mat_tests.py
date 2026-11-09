@@ -716,7 +716,7 @@ def trunc_names_test(tmp_path):
     a=pd.DataFrame({'a': [1,2,3], 'b': [4,5,6]})
     names = ['They','We','Reality']
     a['names'] =  names
-    a.set_index('names',inplace=True, drop=True)
+    a = a.set_index('names', drop=True)
     am = pyemu.Matrix.from_dataframe(a)
     am.to_binary(tmp_path / 'a.binary.jcb')
     am.to_coo(tmp_path /'a.coo.jcb')
@@ -729,7 +729,7 @@ def trunc_names_test(tmp_path):
              "We’ll never survive! You’re only saying that because no one ever has.",
              "Reality is frequently inaccurate."]
     a['names'] =  [n.replace(" ","-",) for n in names]
-    a.set_index('names',inplace=True, drop=True)
+    a = a.set_index('names', drop=True)
     am = pyemu.Matrix.from_dataframe(a)
     am.to_binary(tmp_path /'a.binary.jcb')
     am.to_coo(tmp_path /'a.coo.jcb')

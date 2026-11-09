@@ -695,7 +695,8 @@ def write_pp_shapfile(pp_df, shapename=None):
     except:
         shp = shapefile.Writer(target=shapename, shapeType=shapefile.POINT)
     for name, dtype in dfs[0].dtypes.items():
-        if dtype == object:
+        # pandas 3 string columns have dtype `str`, not object
+        if dtype == object or pd.api.types.is_string_dtype(dtype):
             shp.field(name, "C", size=50)
         elif dtype in [int]:#, np.int, np.int64, np.int32]:
             shp.field(name, "N", size=50, decimal=0)

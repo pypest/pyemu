@@ -3238,7 +3238,7 @@ class PstFrom(object):
             df["tpl_filename"] = pp_tpl
         if "pp_filename" not in df.columns:
             df["pp_filename"] = pp_filename
-        df.set_index("parnme", drop=False, inplace=True)
+        df = df.set_index("parnme", drop=False)
         # pp_locs = df
         # df includes most of the par info for par_dfs and also for
         # relate_parfiles
@@ -3713,7 +3713,10 @@ def _get_use_rows(tpldf, idxcolvals, use_rows, zero_based, fnme,
             for r in use_rows
         ]
     use_rows = set(use_rows)
-    sel = tpldf.sidx.isin(use_rows) | tpldf.idx_strs.isin(use_rows)
+    # idx_strs can only match str entries; passing the tuples/numbers too makes
+    # isin raise for pandas 3 (pyarrow-backed) str dtype
+    str_rows = [r for r in use_rows if isinstance(r, str)]
+    sel = tpldf.sidx.isin(use_rows) | tpldf.idx_strs.isin(str_rows)
     if not sel.any():  # use_rows must be ints
         inidx = list(use_rows.intersection(tpldf.index))
         missing = use_rows.difference(tpldf.index)
@@ -3905,7 +3908,14 @@ def _build_parnames(
             )
 
         if par_style == "d":
-            direct_tpl_df[use_col] = ("~ " + df.loc[:, use_col] + " ~").values
+            # object dtype: non-parameterised rows are later filled with the
+            # original (numeric) values, which a pandas 3 str column rejects.
+            # (an object ndarray of str would be re-inferred as str on assignment)
+            direct_tpl_df[use_col] = pd.Series(
+                ("~ " + df.loc[:, use_col] + " ~").to_numpy(),
+                index=direct_tpl_df.index,
+                dtype=object,
+            )
     if par_style == "d":
         return df, direct_tpl_df
     return df, None

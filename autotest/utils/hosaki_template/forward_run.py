@@ -26,7 +26,7 @@ def hosaki_ppw_worker(pst_name,host,port):
     pvals = ppw.get_parameters()
     if pvals is None:
         return
-    pvals.sort_index(inplace=True)
+    pvals = pvals.sort_index()
 
     while True:
 
@@ -35,7 +35,7 @@ def hosaki_ppw_worker(pst_name,host,port):
         pvals = ppw.get_parameters()
         if pvals is None:
             break
-        pvals.sort_index(inplace=True)
+        pvals = pvals.sort_index()
 
 
 if __name__ == "__main__":

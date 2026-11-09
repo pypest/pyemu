@@ -176,7 +176,9 @@ def test_freyberg(tmp_path):
             dict([s.split(':') for s in x.split('_') if ':' in s])))
     sfrobs.pop("oname")
     sfrobs.pop("otype")
-    sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
+    # replace the columns (rather than setting into them via .loc) so the
+    # str dtype (pandas 3 default) doesn't reject the int values
+    sfrobs[sfr_idx] = sfrobs[sfr_idx].astype(int)
     sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
                                   columns=['usecol'], values='obsval')
     sfodf_c = sfodf.set_index(sfr_idx).sort_index()
@@ -215,7 +217,9 @@ def test_freyberg(tmp_path):
             dict([s.split(':') for s in x.split('_') if ':' in s])))
     sfrobs.pop("oname")
     sfrobs.pop("otype")
-    sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
+    # replace the columns (rather than setting into them via .loc) so the
+    # str dtype (pandas 3 default) doesn't reject the int values
+    sfrobs[sfr_idx] = sfrobs[sfr_idx].astype(int)
     sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
                                   columns=['usecol'], values='obsval')
     sfodf_c = sfodf.set_index(sfr_idx).sort_index()
@@ -544,7 +548,7 @@ def generic_function(wd='.'):
     import pandas as pd
     import numpy as np
     #onames = ["generic_obs_{0}".format(i) for i in range(100)]
-    onames = pd.date_range("1-1-2020",periods=100,freq='d')
+    onames = pd.date_range("1-1-2020",periods=100,freq='D')
     df = pd.DataFrame({"index_2":np.arange(100),"simval1":1,"simval2":2,"datetime":onames})
     df.index = df.pop("datetime")
     df.to_csv(os.path.join(wd, "generic.csv"), date_format="%d-%m-%Y %H:%M:%S")
@@ -809,7 +813,7 @@ def test_mf6_freyberg(tmp_path):
                       use_cols=[1, 2], par_name_base=["tmp2_1", "tmp2_2"],
                       pargp="tmp2", mfile_sep=',', par_style='direct',apply_order=0)
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="D")
     # print(dts)
     for tag, bnd in tags.items():
         lb, ub = bnd[0], bnd[1]
@@ -1136,7 +1140,7 @@ def mf6_freyberg_shortnames_test(tmp_path):
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="D")
     print(dts)
     for tag,bnd in tags.items():
         lb,ub = bnd[0],bnd[1]
@@ -1329,7 +1333,7 @@ def mf6_freyberg_da_test(tmp_path):
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="D")
     # print(dts)
     for tag,bnd in tags.items():
         lb,ub = bnd[0],bnd[1]
@@ -1541,7 +1545,7 @@ def direct_quickfull_test(tmp_path):
     pf.extra_py_imports.append('flopy')
     ib = mg.idomain[0]
 
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(m.modeltime.perlen), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(m.modeltime.perlen), unit="D")
     print(dts)
     # ib = m.dis.idomain.array[0,:,:]
     # setup from array style pars
@@ -1731,7 +1735,7 @@ def direct_arraypars_test(tmp_path):
     ib = mg.idomain[0]
     tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
             "rch_recharge": [.5, 1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(m.modeltime.perlen), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(m.modeltime.perlen), unit="D")
     print(dts)
     # ib = m.dis.idomain.array[0,:,:]
     # setup from array style pars
@@ -1795,7 +1799,7 @@ def direct_listpars_test(tmp_path):
     pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
     pf.extra_py_imports.append('flopy')
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(m.modeltime.perlen), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(m.modeltime.perlen), unit="D")
 
     # Add a variety of list style pars
     list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
@@ -1996,7 +2000,7 @@ def mf6_freyberg_direct_test(tmp_path):
     ib = m.dis.idomain[0].array
     tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
             "rch_recharge": [.5, 1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="D")
     print(dts)
     #ib = m.dis.idomain.array[0,:,:]
     # setup from array style pars
@@ -2364,7 +2368,7 @@ def mf6_freyberg_varying_idomain(tmp_path):
         ib[k] = a
 
     tags = {"npf_k_": [0.1, 10.,0.003,35]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="D")
     print(dts)
     for tag, bnd in tags.items():
         lb, ub = bnd[0], bnd[1]
@@ -2536,7 +2540,7 @@ def mf6_freyberg_short_direct_test(tmp_path):
         "sto_sy": [.9, 1.1],
         "rch_recharge": [.5, 1.5]
     }
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="D")
     print(dts)
     # setup from array style pars
     for tag, bnd in tags.items():
@@ -3643,7 +3647,7 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
     tags = {"npf_k_": [0.1, 10.]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="D")
     print(dts)
     arr_dict = {}
     for tag, bnd in tags.items():
@@ -3765,7 +3769,7 @@ def test_mf6_freyberg_pp_locs(tmp_path):
     ib = m.dis.idomain[0].array
     tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
     #         "rch_recharge": [.5, 1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="D")
     print(dts)
 
     xmn = m.modelgrid.xvertices.min()
@@ -4224,7 +4228,7 @@ def mf6_subdir_test(tmp_path):
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="D")
     print(dts)
     for tag,bnd in tags.items():
         lb,ub = bnd[0],bnd[1]
@@ -5004,7 +5008,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
     #        "rch_recharge": [.5, 1.5]}
     tags = {"npf_k_": [0.1, 10.],"rch_recharge": [.5, 1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="D")
     # print(dts)
     # ib = m.dis.idomain.array[0,:,:]
     # setup from array style pars
@@ -5795,7 +5799,7 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     ib = m.dis.idomain[0].array
     tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
     #         "rch_recharge": [.5, 1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="D")
     print(dts)
 
     xmn = m.modelgrid.xvertices.min()
@@ -6011,7 +6015,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
     #        "rch_recharge": [.5, 1.5]}
     tags = {"npf_k_": [0.1, 10.]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="D")
     print(dts)
     # ib = m.dis.idomain.array[0,:,:]
     # setup from array style pars
@@ -6019,7 +6023,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     ib = m.dis.idomain[0].array
     tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
     #         "rch_recharge": [.5, 1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="D")
     print(dts)
 
     xmn = m.modelgrid.xvertices.min()

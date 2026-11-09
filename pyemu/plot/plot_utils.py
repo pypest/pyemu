@@ -559,7 +559,7 @@ def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
 
     # drop the final `ident` column
     if "ident" in df.columns:
-        df.drop("ident", inplace=True, axis=1)
+        df = df.drop("ident", axis=1)
 
     if nsv is None or nsv > len(df.columns):
         nsv = len(df.columns)
@@ -568,8 +568,8 @@ def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
     df = df[df.columns[:nsv]]
 
     df["ident"] = df.sum(axis=1)
-    df.sort_values(by="ident", inplace=True, ascending=False)
-    df.drop("ident", inplace=True, axis=1)
+    df = df.sort_values(by="ident", ascending=False)
+    df = df.drop("ident", axis=1)
 
     if "figsize" in kwargs:
         figsize = kwargs["figsize"]
@@ -1759,14 +1759,14 @@ def plot_jac_test(
     # the input csv and then the output.
     base_par = jactest_in_df.loc["base"]
     delta_par_df = jactest_in_df.subtract(base_par, axis="columns")
-    delta_par_df.replace(0, np.nan, inplace=True)
-    delta_par_df.drop("base", axis="index", inplace=True)
+    delta_par_df = delta_par_df.replace(0, np.nan)
+    delta_par_df = delta_par_df.drop("base", axis="index")
     delta_par_df["change"] = delta_par_df.sum(axis="columns")
     delta_par = pd.Series(delta_par_df["change"])
 
     base_obs = jactest_out_df.loc["base"]
     delta_obs = jactest_out_df.subtract(base_obs)
-    delta_obs.drop("base", axis="index", inplace=True)
+    delta_obs = delta_obs.drop("base", axis="index")
     # if targetobs is None, then reset it to all the observations.
     if targetobs is None:
         targetobs = jactest_out_df.columns.tolist()[8:]
@@ -1780,7 +1780,7 @@ def plot_jac_test(
     # and increments, then we can plot derivative vs. increment for each parameter
     extr_df = pd.Series(jacobian.index.values).str.extract(r"(.+)(_\d+$)", expand=True)
     extr_df[1] = pd.to_numeric(extr_df[1].str.replace("_", "")) + 1
-    extr_df.rename(columns={0: "parameter", 1: "increment"}, inplace=True)
+    extr_df = extr_df.rename(columns={0: "parameter", 1: "increment"})
     extr_df.index = jacobian.index
 
     # make a dataframe for plotting the Jacobian by combining the parameter name

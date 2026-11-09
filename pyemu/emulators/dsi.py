@@ -748,9 +748,9 @@ class DSI(Emulator):
         else:
             id_vars=oe.index.name
         stack_stats = oe._df.describe(percentiles=percentiles).reset_index().melt(id_vars="index")
-        stack_stats.rename(columns={"value":"obsval","index":"stat"},inplace=True)
+        stack_stats = stack_stats.rename(columns={"value":"obsval","index":"stat"})
         stack_stats['obsnme'] = stack_stats.apply(lambda x: x.variable+"_stat:"+x.stat,axis=1)
-        stack_stats.set_index("obsnme",inplace=True)
+        stack_stats = stack_stats.set_index("obsnme")
         stack_stats = stack_stats.obsval
         self.logger.statement(f"stack osb recorded to dsi.stack_stats.csv...")
         out_file = os.path.join(t_d,"dsi.stack_stats.csv")
@@ -763,9 +763,9 @@ class DSI(Emulator):
             self.logger.statement(f"including {oe.values.flatten().shape[0]} stack observations...")
 
             stack = oe._df.reset_index().melt(id_vars=id_vars)
-            stack.rename(columns={"value":"obsval"},inplace=True)
+            stack = stack.rename(columns={"value":"obsval"})
             stack['obsnme'] = stack.apply(lambda x: x.variable+"_real:"+x.index,axis=1)
-            stack.set_index("obsnme",inplace=True)
+            stack = stack.set_index("obsnme")
             stack = stack.obsval
             out_file = os.path.join(t_d,"dsi.stack.csv")
             out_files.append(out_file)

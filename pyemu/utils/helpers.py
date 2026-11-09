@@ -703,7 +703,7 @@ def geostatistical_prior_builder(
                     )
                     continue
                 # df_zone.sort_values(by="parnme",inplace=True)
-                df_zone.sort_index(inplace=True)
+                df_zone = df_zone.sort_index()
                 if verbose:
                     print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x, df_zone.y, df_zone.parnme)
@@ -1758,9 +1758,7 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
 
         jco_cols[parnme] = jco_col.obsval
 
-    jco_cols = pd.DataFrame.from_records(
-        data=jco_cols, index=list(obs_diff.index.values)
-    )
+    jco_cols = pd.DataFrame(jco_cols)
 
     jco_cols = pyemu.Jco.from_dataframe(jco_cols)
 
@@ -2143,12 +2141,26 @@ def _process_array_file(model_file, df):
     try:
         # default to space (if fixed format file this should be taken care of
         # in fmt string)
-        sep = df_mf.sep.fillna(' ').iloc[0]
+        sep = df_mf.sep.iloc[0]
+        if pd.isna(sep):  # (filling an all-nan float column with a str is deprecated)
+            sep = ' '
     except AttributeError:
         sep = ' '
     with open(model_file, 'w') as fp:
         fp.writelines(header)
         np.savetxt(fp, np.atleast_2d(org_arr), fmt=fmt, delimiter=sep)
+
+
+def _chunk_list(items, chunk_len):
+    """split a list into consecutive chunks of at most `chunk_len` items.
+
+    Plain list slicing (rather than numpy reshape) so it works regardless of
+    the array type pandas hands back (e.g. pandas 3 ArrowStringArray).
+    Always returns at least one (possibly empty) chunk.
+    """
+    return [
+        items[i : i + chunk_len] for i in range(0, len(items), chunk_len)
+    ] or [[]]
 
 
 def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
@@ -2233,15 +2245,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
             )
             # don't need to process all (e.g. if const. mults apply across kper...)
             pp_args = pp_df.drop_duplicates().to_dict("records")
-            num_ppargs = len(pp_args)
-            num_chunk_floor = num_ppargs // chunk_len
-            main_chunks = (
-                np.array(pp_args)[: num_chunk_floor * chunk_len]
-                .reshape([-1, chunk_len])
-                .tolist()
-            )
-            remainder = np.array(pp_args)[num_chunk_floor * chunk_len :].tolist()
-            chunks = main_chunks + [remainder]
+            chunks = _chunk_list(pp_args, chunk_len)
             print("number of chunks to process:", len(chunks))
             if len(chunks) == 1:
                 _process_chunk_fac2real(chunks[0], 0)
@@ -2258,16 +2262,10 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
             print("finished fac2real", datetime.now())
 
     print("starting arr mlt", datetime.now())
-    uniq = df.model_file.unique()  # unique model input files to be produced
-    num_uniq = len(uniq)  # number of input files to be produced
-    # number of files to send to each processor
-    # lazy splitting the files to be processed into even chunks
-    num_chunk_floor = num_uniq // chunk_len  # number of whole chunks
-    main_chunks = (
-        uniq[: num_chunk_floor * chunk_len].reshape([-1, chunk_len]).tolist()
-    )  # the list of files broken down into chunks
-    remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
-    chunks = main_chunks + [remainder]
+    # unique model input files to be produced, split into chunks of files
+    # to send to each processor
+    uniq = df.model_file.unique().tolist()
+    chunks = _chunk_list(uniq, chunk_len)
     print("number of chunks to process:", len(chunks))
     if len(chunks) == 1:
         _process_chunk_array_files(chunks[0], 0, df)
@@ -2491,16 +2489,10 @@ def apply_genericlist_pars(df, chunk_len=50):
 
     """
     print("starting list mlt", datetime.now())
-    uniq = df.model_file.unique()  # unique model input files to be produced
-    num_uniq = len(uniq)  # number of input files to be produced
-    # number of files to send to each processor
-    # lazy plitting the files to be processed into even chunks
-    num_chunk_floor = num_uniq // chunk_len  # number of whole chunks
-    main_chunks = (
-        uniq[: num_chunk_floor * chunk_len].reshape([-1, chunk_len]).tolist()
-    )  # the list of files broken down into chunks
-    remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
-    chunks = main_chunks + [remainder]
+    # unique model input files to be produced, split into chunks of files
+    # to send to each processor
+    uniq = df.model_file.unique().tolist()
+    chunks = _chunk_list(uniq, chunk_len)
     print("number of chunks to process:", len(chunks))
     if len(chunks) == 1:
         _process_chunk_list_files(chunks[0], 0, df)
@@ -4465,7 +4457,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",t_d
                 #print(X_train[:,ii])
                 #print(y_train)
                 ddf = df[[input_name,output_name,"predmean","predstd","isverf"]].copy()
-                ddf.sort_values(by=input_name,inplace=True)
+                ddf = ddf.sort_values(by=input_name)
                 ax.scatter(ddf.loc[ddf.isverf==0,input_name],ddf.loc[ddf.isverf==0,output_name],marker=".",c="r",label="training")
                 if nverf > 0:
                     ax.scatter(ddf.loc[ddf.isverf==1,input_name],ddf.loc[ddf.isverf==1,output_name],marker="^",c="c",label="verf")
@@ -4549,7 +4541,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",t_d
         # why is it getting so strict?!  isn't python duck-typed?
         if col in gpst.observation_data.columns and \
                 gpst.observation_data.dtypes[col] != pst.observation_data.dtypes[col]:
-            gpst.observation_data[col] = gpst.obsveration_data[col].astype(pst.observation_data.dtypes[col])
+            gpst.observation_data[col] = gpst.observation_data[col].astype(pst.observation_data.dtypes[col])
         gpst.observation_data.loc[output_names,col] = pst.observation_data.loc[output_names,col].values
     if include_emulated_std_obs:
         stdobs = [o for o in gpst.obs_names if o.endswith("_gprstd")]
@@ -5103,9 +5095,9 @@ def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
     if dsi.dsivc_args.get("track_stack",False):
         # write long form oe
         stack = oe._df.reset_index().melt(id_vars="real_name")
-        stack.rename(columns={"value":"obsval"},inplace=True)
+        stack = stack.rename(columns={"value":"obsval"})
         stack['obsnme'] = stack.apply(lambda x: x.variable+"_real:"+x.real_name,axis=1)
-        stack.set_index("obsnme",inplace=True)
+        stack = stack.set_index("obsnme")
         stack = stack.obsval
         out_file = os.path.join(md_ies,"dsi.stack.csv")
         stack.to_csv(out_file,float_format="%.6e")
@@ -5113,9 +5105,9 @@ def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
     #get user-specified quantiles
     percentiles = dsi.dsivc_args.get("percentiles",[0.25,0.75,0.5])
     stack_stats = oe._df.describe(percentiles=percentiles).reset_index().melt(id_vars="index")
-    stack_stats.rename(columns={"value":"obsval","index":"stat"},inplace=True)
+    stack_stats = stack_stats.rename(columns={"value":"obsval","index":"stat"})
     stack_stats['obsnme'] = stack_stats.apply(lambda x: x.variable+"_stat:"+x.stat,axis=1)
-    stack_stats.set_index("obsnme",inplace=True)
+    stack_stats = stack_stats.set_index("obsnme")
     stack_stats = stack_stats.obsval
     out_file = os.path.join(md_ies,"dsi.stack_stats.csv")
     stack_stats.to_csv(out_file,float_format="%.6e")

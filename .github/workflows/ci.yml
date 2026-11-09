@@ -22,11 +22,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: [
-          "3.10",
           "3.11",
           "3.12",
           "3.13",
-          "3.14"
+          "3.14",
+          "3.15"
         ]
         run-type: [std]
         test-path: ["autotest"]
@@ -98,19 +98,181 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    # The notebooks normally take ~10 minutes and no single cell takes over a
+    # minute, but one that starts a PEST++ master and python workers can hang
+    # (the master waits forever for a run that never comes back), and nbval's
+    # default cell timeout is 2000 s. Cap a cell at 5 minutes and the step at 30.
     - name: Test Notebooks
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13 }}
+      timeout-minutes: 30
       shell: bash -l {0}
       run: |
         uv run pytest examples/*.ipynb \
         -rA -vv --tb=native \
         --nbval-lax --dist loadscope \
+        --nbval-cell-timeout=300 \
         --cov=pyemu --cov-report=xml --cov-append
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    # Upload even if the notebook step failed or timed out, so a hung notebook does
+    # not also drop the autotest coverage; only skip when the run was cancelled.
     - name: Codecov
+      if: ${{ !cancelled() }}
       uses: codecov/codecov-action@v7
       with:
+        files: coverage.xml
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
+
+  # Newest release of every dependency that pyproject.toml allows, ignoring
+  # uv.lock (and the Dependabot cooldown): what a fresh `pip install pyemu` gets
+  # today. The pyemuCI matrix above tests the locked stack, so this is the job
+  # that tells us when a new upstream release breaks us.
+  # Non-blocking for now; drop `continue-on-error` once it has been stable.
+  pyemuLatest:
+    name: autotests (latest deps)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    continue-on-error: true
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v7
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: "3.13"  # newest python TensorFlow has wheels for
+
+    - name: Install the project with the newest allowed dependencies [with TensorFlow]
+      run: |
+        uv sync --upgrade --extra optional --extra tests --extra tf
+
+    # `uv pip list` plus release dates: shows which brand-new releases this run
+    # picked up. The dates come from the upload times in a PEP 751 pylock.toml
+    # exported from the lock `uv sync` just wrote (a standard format, rather than
+    # uv.lock's own layout). Informational only: if anything fails it warns and
+    # falls back to a plain `uv pip list`.
+    - name: List the installed packages with release dates (newest first)
+      run: |
+        {
+          uv export --frozen --format pylock.toml --all-extras --all-groups --no-emit-project -q -o "$RUNNER_TEMP/pylock.toml" &&
+          uv run python .github/scripts/list_release_dates.py "$RUNNER_TEMP/pylock.toml"
+        } || { echo "::warning::could not list release dates, falling back to plain uv pip list"; uv pip list; }
+
+    - name: Install Modflow executables
+      uses: modflowpy/install-modflow-action@v1
+
+    - name: Add executables directory to path
+      shell: bash
+      run: |
+        echo "adding bin dir '$MODFLOW_BIN_PATH' to path"
+        echo "$MODFLOW_BIN_PATH" >> $GITHUB_PATH
+        echo "adding bin dir '$HOME/.local/bin' to path"
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install PEST++ suite using get-pestpp
+      shell: bash -l {0}
+      run: |
+        uv run get-pestpp --owner pestpp --repo pestpp-nightly-builds :home
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run tests
+      shell: bash -l {0}
+      run: |
+        uv run pytest autotest \
+        -n=auto \
+        -rA -vv --tb=native \
+        --durations=20 \
+        --timeout=1200
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Oldest version of every direct dependency that pyproject.toml allows (uv's
+  # `lowest-direct` resolution), on the oldest supported python. Checks that the
+  # lower bounds in pyproject.toml are really supported - neither the locked
+  # matrix nor the latest-deps job would notice if one stopped being true.
+  # UV_RESOLUTION is set for the whole job because otherwise the first plain
+  # `uv run` re-syncs the environment back to the newest versions.
+  # Non-blocking for now; drop `continue-on-error` once it has been stable.
+  pyemuLowest:
+    name: autotests (lowest deps, py3.11)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    continue-on-error: true
+    env:
+      UV_RESOLUTION: lowest-direct
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v7
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: "3.11"  # oldest supported python
+
+    - name: Install the project with the lowest allowed dependencies [with TensorFlow]
+      run: |
+        uv sync --upgrade --extra optional --extra tests --extra tf
+
+    # as in pyemuLatest: `uv pip list` plus release dates (informational)
+    - name: List the installed packages with release dates (newest first)
+      run: |
+        {
+          uv export --frozen --format pylock.toml --all-extras --all-groups --no-emit-project -q -o "$RUNNER_TEMP/pylock.toml" &&
+          uv run python .github/scripts/list_release_dates.py "$RUNNER_TEMP/pylock.toml"
+        } || { echo "::warning::could not list release dates, falling back to plain uv pip list"; uv pip list; }
+
+    - name: Check this job is really testing the lowest allowed versions
+      run: |
+        uv run python - <<'EOF'
+        import importlib.metadata as md
+        import tomllib
+
+        from packaging.requirements import Requirement
+
+        deps = tomllib.load(open("pyproject.toml", "rb"))["project"]["dependencies"]
+        bad = []
+        for d in deps:
+            r = Requirement(d)
+            if r.marker is not None and not r.marker.evaluate():
+                continue
+            floors = [s.version for s in r.specifier if s.operator == ">="]
+            installed = md.version(r.name)
+            print(f"{r.name}: installed {installed}, lowest allowed {floors[0] if floors else 'n/a'}")
+            if floors and installed != floors[0]:
+                bad.append((r.name, installed, floors[0]))
+        assert not bad, f"not at the lowest supported version: {bad}"
+        EOF
+
+    - name: Install Modflow executables
+      uses: modflowpy/install-modflow-action@v1
+
+    - name: Add executables directory to path
+      shell: bash
+      run: |
+        echo "adding bin dir '$MODFLOW_BIN_PATH' to path"
+        echo "$MODFLOW_BIN_PATH" >> $GITHUB_PATH
+        echo "adding bin dir '$HOME/.local/bin' to path"
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install PEST++ suite using get-pestpp
+      shell: bash -l {0}
+      run: |
+        uv run get-pestpp --owner pestpp --repo pestpp-nightly-builds :home
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run tests
+      shell: bash -l {0}
+      run: |
+        uv run pytest autotest \
+        -n=auto \
+        -rA -vv --tb=native \
+        --durations=20 \
+        --timeout=1200
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
