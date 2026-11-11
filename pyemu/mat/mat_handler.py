@@ -1879,25 +1879,32 @@ class Matrix(object):
 
         """
         if self.isdiagonal:
-            # raise NotImplementedError()
-            self.__x = self.as_2d
-            self.isdiagonal = False
-        if droptol is not None:
-            self.x[np.abs(self.x) < droptol] = 0.0
+            diag = self.x.flatten()
+            if droptol is None or droptol <= 0:
+                row_idxs = col_idxs = np.nonzero(diag)[0]
+            else:
+                row_idxs = col_idxs = np.nonzero(
+                    (diag >= droptol) | (diag <= -droptol)
+                )[0]
+            vals = diag[row_idxs]
+        else:
+            if droptol is None or droptol <= 0:
+                row_idxs, col_idxs = np.nonzero(self.x)
+            else:
+                row_idxs, col_idxs = np.nonzero(
+                    (self.x >= droptol) | (self.x <= -droptol)
+                )
+            vals = self.x[row_idxs, col_idxs]
         f = open(filename, "wb")
-        # print("counting nnz")
-        nnz = np.count_nonzero(self.x)  # number of non-zero entries
+        nnz = row_idxs.shape[0]  # number of non-zero entries
         # write the header
         header = np.array(
             (self.shape[1], self.shape[0], nnz), dtype=self.binary_header_dt
         )
         header.tofile(f)
-        # get the indices of non-zero entries
-        # print("getting nnz idxs")
-        row_idxs, col_idxs = np.nonzero(self.x)
 
         if chunk is None:
-            flat = self.x[row_idxs, col_idxs].flatten()
+            flat = vals
             data = np.rec.fromarrays(
                 [row_idxs, col_idxs, flat], dtype=self.coo_rec_dt
             )
@@ -1908,7 +1915,7 @@ class Matrix(object):
             while True:
                 # print(row_idxs[start],row_idxs[end])
                 # print("chunk",start,end)
-                flat = self.x[row_idxs[start:end], col_idxs[start:end]].flatten()
+                flat = vals[start:end]
                 data = np.rec.fromarrays(
                     [row_idxs[start:end], col_idxs[start:end], flat],
                     dtype=self.coo_rec_dt,
@@ -2019,40 +2026,48 @@ class Matrix(object):
         Args:
             filename (`str`): filename to save binary file
             droptol (`float`): absolute value tolerance to make values
-                smaller `droptol` than zero.  Default is None (no dropping)
+                smaller `droptol` than zero.  Default is None (no dropping).
             chunk (`int`): number of elements to write in a single pass.
                 Default is `None`, which writes the entire numeric part of the
                 `Matrix` at once. This is faster but requires more memory.
 
         """
-        # print(self.x)
-        # print(type(self.x))
-
         if np.any(np.isnan(self.x)):
             raise Exception("Matrix.to_binary(): nans found")
         if self.isdiagonal:
-            # raise NotImplementedError()
-            self.__x = self.as_2d
-            self.isdiagonal = False
-        if droptol is not None:
-            self.x[np.abs(self.x) < droptol] = 0.0
+            diag = self.x.flatten()
+            if droptol is None or droptol <= 0:
+                row_idxs = col_idxs = np.nonzero(diag)[0]
+            else:
+                row_idxs = col_idxs = np.nonzero(
+                    (diag >= droptol) | (diag <= -droptol)
+                )[0]
+        else:
+            if droptol is None or droptol <= 0:
+                row_idxs, col_idxs = np.nonzero(self.x)
+            else:
+                row_idxs, col_idxs = np.nonzero(
+                    (self.x >= droptol) | (self.x <= -droptol)
+                )
         f = open(filename, "wb")
-        nnz = np.count_nonzero(self.x)  # number of non-zero entries
+        nnz = row_idxs.shape[0]  # number of non-zero entries
         # write the header
         header = np.array(
             (-self.shape[1], -self.shape[0], nnz), dtype=self.binary_header_dt
         )
         header.tofile(f)
-        # get the indices of non-zero entries
-        row_idxs, col_idxs = np.nonzero(self.x)
         icount = row_idxs + 1 + col_idxs * self.shape[0]
+        if self.isdiagonal:
+            vals = diag[row_idxs]
+        else:
+            vals = self.x[row_idxs, col_idxs]
         # flatten the array
-        # flat = self.x[row_idxs, col_idxs].flatten()
+        # flat = vals
         # zip up the index position and value pairs
         # data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
 
         if chunk is None:
-            flat = self.x[row_idxs, col_idxs].flatten()
+            flat = vals
             data = np.rec.fromarrays([icount, flat], dtype=self.binary_rec_dt)
             # write
             data.tofile(f)
@@ -2060,7 +2075,7 @@ class Matrix(object):
             start, end = 0, min(chunk, row_idxs.shape[0])
             while True:
                 # print(row_idxs[start],row_idxs[end])
-                flat = self.x[row_idxs[start:end], col_idxs[start:end]].flatten()
+                flat = vals[start:end]
                 data = np.rec.fromarrays(
                     [icount[start:end], flat], dtype=self.binary_rec_dt
                 )

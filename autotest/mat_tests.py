@@ -441,6 +441,34 @@ def indices_test():
         raise Exception()
 
 
+def save_diagonal_test(setup_empty_mat_temp):
+    # saving must not change the matrix (pyemu issue #718)
+    import os
+    import numpy as np
+    import pyemu
+    wd = setup_empty_mat_temp
+    names = ["p{0}".format(i) for i in range(5)]
+    diag = np.array([1.0, 2.0, 0.0, 4.0, 1.0e-12])
+    expected = np.diag(np.where(np.abs(diag) < 1.0e-10, 0.0, diag))
+    for method in ["to_coo", "to_binary"]:
+        cov = pyemu.Cov(x=diag.reshape(-1, 1), names=names, isdiagonal=True)
+        dense = pyemu.Cov(x=np.diag(diag), names=names, isdiagonal=False)
+        fdiag = os.path.join(wd, "diag.jcb")
+        fdense = os.path.join(wd, "dense.jcb")
+        getattr(cov, method)(fdiag, droptol=1.0e-10)
+        getattr(dense, method)(fdense, droptol=1.0e-10)
+        # the matrices are unchanged
+        assert cov.isdiagonal
+        assert cov.x.shape == (5, 1)
+        assert np.array_equal(cov.x.flatten(), diag)
+        assert np.array_equal(dense.x, np.diag(diag))
+        # a diagonal and its dense equivalent write the same file
+        with open(fdiag, "rb") as a, open(fdense, "rb") as b:
+            assert a.read() == b.read()
+        # and the file reads back as expected
+        assert np.array_equal(pyemu.Matrix.from_binary(fdiag).x, expected)
+
+
 def coo_test(setup_empty_mat_temp):
     import os
     import numpy as np
