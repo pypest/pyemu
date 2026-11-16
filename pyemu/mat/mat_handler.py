@@ -1859,6 +1859,32 @@ class Matrix(object):
             isdiagonal=False,
         )
 
+    def _nonzero_entries(self, droptol=None):
+        """row indices, column indices and values of the entries to write,
+        read without modifying the matrix.  Entries with absolute
+        value smaller than `droptol` are skipped."""
+        x = self.x.flatten() if self.isdiagonal else self.x
+        if droptol is None or droptol <= 0:
+            idxs = np.nonzero(x)
+        else:
+            idxs = np.nonzero((x >= droptol) | (x <= -droptol))
+        vals = x[idxs]
+        if self.isdiagonal:
+            return idxs[0], idxs[0], vals
+        return idxs[0], idxs[1], vals
+
+    @staticmethod
+    def _write_records(f, arrays, dtype, chunk=None):
+        """write `arrays` as records of `dtype` to `f`, `chunk` records at a time
+        (all at once if `chunk` is None)"""
+        if chunk is None:
+            np.rec.fromarrays(arrays, dtype=dtype).tofile(f)
+            return
+        for start in range(0, arrays[0].shape[0], chunk):
+            np.rec.fromarrays(
+                [a[start : start + chunk] for a in arrays], dtype=dtype
+            ).tofile(f)
+
     def to_coo(self, filename, droptol=None, chunk=None):
         """write an extended PEST-format binary file.  The data format is
         [int,int,float] for i,j,value.  It is autodetected during
@@ -1878,23 +1904,7 @@ class Matrix(object):
             This method is used by pyemu.Ensemble.to_binary()
 
         """
-        if self.isdiagonal:
-            diag = self.x.flatten()
-            if droptol is None or droptol <= 0:
-                row_idxs = col_idxs = np.nonzero(diag)[0]
-            else:
-                row_idxs = col_idxs = np.nonzero(
-                    (diag >= droptol) | (diag <= -droptol)
-                )[0]
-            vals = diag[row_idxs]
-        else:
-            if droptol is None or droptol <= 0:
-                row_idxs, col_idxs = np.nonzero(self.x)
-            else:
-                row_idxs, col_idxs = np.nonzero(
-                    (self.x >= droptol) | (self.x <= -droptol)
-                )
-            vals = self.x[row_idxs, col_idxs]
+        row_idxs, col_idxs, vals = self._nonzero_entries(droptol)
         f = open(filename, "wb")
         nnz = row_idxs.shape[0]  # number of non-zero entries
         # write the header
@@ -1902,29 +1912,7 @@ class Matrix(object):
             (self.shape[1], self.shape[0], nnz), dtype=self.binary_header_dt
         )
         header.tofile(f)
-
-        if chunk is None:
-            flat = vals
-            data = np.rec.fromarrays(
-                [row_idxs, col_idxs, flat], dtype=self.coo_rec_dt
-            )
-            data.tofile(f)
-        else:
-
-            start, end = 0, min(chunk, row_idxs.shape[0])
-            while True:
-                # print(row_idxs[start],row_idxs[end])
-                # print("chunk",start,end)
-                flat = vals[start:end]
-                data = np.rec.fromarrays(
-                    [row_idxs[start:end], col_idxs[start:end], flat],
-                    dtype=self.coo_rec_dt,
-                )
-                data.tofile(f)
-                if end == row_idxs.shape[0]:
-                    break
-                start = end
-                end = min(row_idxs.shape[0], start + chunk)
+        self._write_records(f, [row_idxs, col_idxs, vals], self.coo_rec_dt, chunk)
 
         for name in self.col_names:
             if len(name) > self.new_par_length:
@@ -2034,21 +2022,7 @@ class Matrix(object):
         """
         if np.any(np.isnan(self.x)):
             raise Exception("Matrix.to_binary(): nans found")
-        if self.isdiagonal:
-            diag = self.x.flatten()
-            if droptol is None or droptol <= 0:
-                row_idxs = col_idxs = np.nonzero(diag)[0]
-            else:
-                row_idxs = col_idxs = np.nonzero(
-                    (diag >= droptol) | (diag <= -droptol)
-                )[0]
-        else:
-            if droptol is None or droptol <= 0:
-                row_idxs, col_idxs = np.nonzero(self.x)
-            else:
-                row_idxs, col_idxs = np.nonzero(
-                    (self.x >= droptol) | (self.x <= -droptol)
-                )
+        row_idxs, col_idxs, vals = self._nonzero_entries(droptol)
         f = open(filename, "wb")
         nnz = row_idxs.shape[0]  # number of non-zero entries
         # write the header
@@ -2056,34 +2030,10 @@ class Matrix(object):
             (-self.shape[1], -self.shape[0], nnz), dtype=self.binary_header_dt
         )
         header.tofile(f)
-        icount = row_idxs + 1 + col_idxs * self.shape[0]
-        if self.isdiagonal:
-            vals = diag[row_idxs]
-        else:
-            vals = self.x[row_idxs, col_idxs]
-        # flatten the array
-        # flat = vals
-        # zip up the index position and value pairs
-        # data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
-
-        if chunk is None:
-            flat = vals
-            data = np.rec.fromarrays([icount, flat], dtype=self.binary_rec_dt)
-            # write
-            data.tofile(f)
-        else:
-            start, end = 0, min(chunk, row_idxs.shape[0])
-            while True:
-                # print(row_idxs[start],row_idxs[end])
-                flat = vals[start:end]
-                data = np.rec.fromarrays(
-                    [icount[start:end], flat], dtype=self.binary_rec_dt
-                )
-                data.tofile(f)
-                if end == row_idxs.shape[0]:
-                    break
-                start = end
-                end = min(row_idxs.shape[0], start + chunk)
+        icount = col_idxs * self.shape[0]
+        icount += row_idxs
+        icount += 1
+        self._write_records(f, [icount, vals], self.binary_rec_dt, chunk)
 
         for name in self.col_names:
             if len(name) > self.par_length:
