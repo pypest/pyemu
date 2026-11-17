@@ -447,19 +447,19 @@ def save_diagonal_test(setup_empty_mat_temp):
     import numpy as np
     import pyemu
     wd = setup_empty_mat_temp
-    names = ["p{0}".format(i) for i in range(5)]
-    diag = np.array([1.0, 2.0, 0.0, 4.0, 1.0e-12])
+    diag = np.array([1.0, 2.0, 0.0, 4.0, 1.0e-12, -3.0, -1.0e-12])
+    names = ["p{0}".format(i) for i in range(len(diag))]
     expected = np.diag(np.where(np.abs(diag) < 1.0e-10, 0.0, diag))
-    for method in ["to_coo", "to_binary"]:
+    for method, chunk in [(m, c) for m in ["to_coo", "to_binary"] for c in [None, 1, 2]]:
         cov = pyemu.Cov(x=diag.reshape(-1, 1), names=names, isdiagonal=True)
         dense = pyemu.Cov(x=np.diag(diag), names=names, isdiagonal=False)
         fdiag = os.path.join(wd, "diag.jcb")
         fdense = os.path.join(wd, "dense.jcb")
-        getattr(cov, method)(fdiag, droptol=1.0e-10)
-        getattr(dense, method)(fdense, droptol=1.0e-10)
+        getattr(cov, method)(fdiag, droptol=1.0e-10, chunk=chunk)
+        getattr(dense, method)(fdense, droptol=1.0e-10, chunk=chunk)
         # the matrices are unchanged
         assert cov.isdiagonal
-        assert cov.x.shape == (5, 1)
+        assert cov.x.shape == (len(diag), 1)
         assert np.array_equal(cov.x.flatten(), diag)
         assert np.array_equal(dense.x, np.diag(diag))
         # a diagonal and its dense equivalent write the same file
@@ -512,17 +512,17 @@ def coo_test(setup_empty_mat_temp):
     assert np.array_equal(m.x, mm.x)
     os.remove(mname)
 
-    m.to_binary(mname)
+    m.to_binary(mname, chunk=1)
     mm = pyemu.Matrix.from_binary(mname)
     assert np.array_equal(m.x, mm.x)
     os.remove(mname)
 
-    m.to_binary(mname)
+    m.to_binary(mname, chunk=100000)
     mm = pyemu.Matrix.from_binary(mname)
     assert np.array_equal(m.x, mm.x)
     os.remove(mname)
 
-    m.to_binary(mname)
+    m.to_binary(mname, chunk=1000)
     mm = pyemu.Matrix.from_binary(mname)
     assert np.array_equal(m.x, mm.x)
     os.remove(mname)
