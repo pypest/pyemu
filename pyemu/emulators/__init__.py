@@ -10,6 +10,7 @@ from .transformers import (
 import importlib.util
 from .base import Emulator
 from .dsi import DSI
+from .spe import SPE
 #from .lpfa import LPFA
 #from .gpr import GPR  
 
@@ -17,6 +18,7 @@ from .dsi import DSI
 __all__ = [
     'Emulator', #base Emulator Class
     'DSI',  # DSI Emulator Class
+    'SPE',  # sparse precision emulator
 #    'DSIAE',  # DSI Autoencoder Emulator Class
     'LPFA',
 ##    'GPR',  # GPR Emulator Class
