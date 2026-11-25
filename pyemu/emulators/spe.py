@@ -10,7 +10,6 @@ models them in two pieces,
 each built from lasso regressions, then conditions on observations in
 closed form.
 """
-import os
 import warnings
 import numpy as np
 import pandas as pd
@@ -22,14 +21,17 @@ from .base import Emulator
 def spe_file_forward_run(emu_file="spe.pickle", input_file="spe_pars.csv",
                          output_file="spe_sim_vals.csv"):
     """
-    PEST++ forward run, one realization: read the eps values from input_file,
-    run predict() and write the outputs (original units) to output_file.
+    PEST++ forward run, one realization: read the eps_o values from
+    input_file, run predict() with eps_f = 0 and write the outputs (original
+    units) to output_file.
     """
     spe = SPE.load(emu_file)
     pars = pd.read_csv(input_file, index_col=0)
-    # the eps values in the order predict() expects them
-    names = ["eps_" + name for name in spe.output_names]
-    sim_vals = spe.predict(pars.loc[names, "parval1"].values)
+    # eps_o in active_obs order, then eps_f = 0 (the forecasts' conditional mean)
+    names = ["eps_" + name for name in spe.active_obs]
+    eps_o = pars.loc[names, "parval1"].values
+    eps = np.concatenate([eps_o, np.zeros(len(spe.forecast_names))])
+    sim_vals = spe.predict(eps)
     sim_vals.index.name = "obsnme"
     sim_vals.name = "simval"
     sim_vals.to_csv(output_file, header=True)
@@ -38,8 +40,8 @@ def spe_file_forward_run(emu_file="spe.pickle", input_file="spe_pars.csv",
 def spe_runstore_forward_run(emu_file="spe.pickle", pst_name="spe"):
     """
     PEST++ forward run for the external run manager (pestpp-ies ... /e): read
-    every realization's eps values from the run storage file {pst_name}.rns,
-    run predict() on all of them at once and write the outputs back.
+    every realization's eps_o values from the run storage file {pst_name}.rns,
+    run predict() on all of them at once (eps_f = 0) and write the outputs back.
     """
     from pyemu.utils.helpers import RunStor
     spe = SPE.load(emu_file)
@@ -48,9 +50,11 @@ def spe_runstore_forward_run(emu_file="spe.pickle", pst_name="spe"):
     rs = RunStor(rns_file)
     df = rs.get_data()   # realizations by parameters and observations
 
-    # RunStor lower-cases names
-    names = ["eps_" + name.lower() for name in spe.output_names]
-    sim_vals = spe.predict(df.loc[:, names].values)
+    # RunStor lower-cases names.  eps_o in active_obs order, then eps_f = 0
+    names = ["eps_" + name.lower() for name in spe.active_obs]
+    eps_o = df.loc[:, names].values
+    eps = np.hstack([eps_o, np.zeros((eps_o.shape[0], len(spe.forecast_names)))])
+    sim_vals = spe.predict(eps)
     sim_vals.columns = [c.lower() for c in sim_vals.columns]
     df.loc[:, obs_names] = sim_vals.loc[:, obs_names].values
     rs.update(df)
@@ -81,6 +85,11 @@ def _lasso_regression(x, y, max_candidates):
     nreal = x.shape[0]
     corr = x.T.dot(y) / (nreal - 1)
     candidates = np.argsort(-np.abs(corr))[:max_candidates]
+    # drop exact duplicate columns (the lasso solver fails on them).  a
+    # normal score transform makes any two outputs with the same rank order
+    # identical, so they do happen
+    _, first = np.unique(x[:, candidates], axis=1, return_index=True)
+    candidates = candidates[np.sort(first)]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ConvergenceWarning)
         lasso = LassoLarsIC(criterion="bic", fit_intercept=False)
@@ -189,8 +198,8 @@ class SPE(Emulator):
     Everything (Q_oo, K, R^-1, ...) is in the transformed space, standardized
     by the prior ensemble mean and std of each output.
 
-    Instead of condition(), the eps values can be estimated with PESTPP-IES,
-    the same way DSI's latent values are: see prepare_pestpp().
+    Instead of condition(), the eps_o values can be estimated with
+    PESTPP-IES, the same way DSI's latent values are: see prepare_pestpp().
 
     Parameters
     ----------
@@ -568,17 +577,17 @@ class SPE(Emulator):
 
     def _get_emulator_parameters(self, pst=None):
         """
-        PEST++ parameters: one standard normal value per output, named
-        eps_<output name>, in output_names order (the eps_o, then the eps_f).
+        PEST++ parameters: the eps_o, one standard normal value per active
+        observation, named eps_<observation name>, in active_obs order.
         """
         if not self.fitted:
             raise ValueError("SPE must be fitted before calling prepare_pestpp")
-        par_names = ["eps_{0}".format(name) for name in self.output_names]
+        par_names = ["eps_{0}".format(name) for name in self.active_obs]
         df = pd.DataFrame(index=par_names)
         df["parnme"] = par_names
         df["parval1"] = 0.0         # prior mean of a standard normal value
-        df["parlbnd"] = -1.0e10     # effectively unbounded
-        df["parubnd"] = 1.0e10
+        df["parlbnd"] = -4.0        # 4 standard deviations either side
+        df["parubnd"] = 4.0
         df["pargp"] = "spe_pars"
         df["partrans"] = "none"
         return df
@@ -623,13 +632,18 @@ class SPE(Emulator):
         """
         Set up a PESTPP-IES interface for the emulator, like DSI.
 
-        The parameters are the standard normal values (eps_o and eps_f, one per
-        output, named eps_<output name>) that predict() maps to outputs, with
-        prior mean 0 and std 1 (written to spe.unc and set as the parcov).
-        PESTPP-IES then estimates the eps values, and handles the obs+noise
-        itself, instead of condition().  only the eps_o values affect the
-        observations, so the eps_f values keep their prior spread and supply
-        the forecast residual uncertainty.
+        The parameters are the standard normal values eps_o, one per active
+        observation (the nonzero-weight observations that vary in the prior),
+        named eps_<observation name>, with prior mean 0 and bounds -4 and 4.
+        PESTPP-IES takes the prior std of a parameter from its bounds,
+        (upper - lower) / par_sigma_range, so par_sigma_range is set to 8 to
+        make that std 1.  PESTPP-IES estimates the eps_o, and handles the
+        obs+noise itself, instead of condition().
+
+        The forecasts are run with eps_f = 0, so each forecast is its
+        conditional mean given the observations, z_f = K z_o.  the forecast
+        residual variance d_f is not in the PESTPP-IES posterior: the
+        forecast spread comes only from the spread of the observations.
 
         Parameters
         ----------
@@ -665,11 +679,6 @@ class SPE(Emulator):
                                          use_runstor=use_runstor,
                                          pst_name=pst_name)
 
-        # prior std of every eps value is 1
-        with open(os.path.join(t_d, "spe.unc"), "w") as f:
-            f.write("START STANDARD_DEVIATION\n")
-            for par_name in pst_obj.par_names:
-                f.write("{0} 1.0\n".format(par_name))
-            f.write("END STANDARD_DEVIATION\n")
-        pst_obj.pestpp_options["parcov"] = "spe.unc"
+        # prior std of every eps value: (4 - -4) / 8 = 1
+        pst_obj.pestpp_options["par_sigma_range"] = 8
         return pst_obj

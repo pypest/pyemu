@@ -3598,8 +3598,8 @@ def test_spe_ies_log10(tmp_path):
 
 def test_spe_prepare_pestpp(tmp_path):
     """prepare_pestpp writes a working PEST++ interface: one eps parameter per
-    output with prior std 1, every output as an observation, and a
-    forward_run.py that gives the same values as predict()."""
+    active observation with prior std 1, every output as an observation, and
+    a forward_run.py that gives the same values as predict() with eps_f = 0."""
     from pyemu.emulators import SPE
     data, obs_names = _spe_chain_data()
     pst = _spe_pst(data, obs_names)
@@ -3608,10 +3608,14 @@ def test_spe_prepare_pestpp(tmp_path):
     t_d = os.path.join(str(tmp_path), "spe_template")
     pst_spe = spe.prepare_pestpp(t_d)
 
-    assert pst_spe.par_names == ["eps_" + name for name in spe.output_names]
+    assert pst_spe.par_names == ["eps_" + name for name in spe.active_obs]
     assert sorted(pst_spe.obs_names) == sorted(data.columns)
-    assert pst_spe.pestpp_options["parcov"] == "spe.unc"
-    assert os.path.exists(os.path.join(t_d, "spe.unc"))
+    # prior std 1 from the bounds: (4 - -4) / par_sigma_range
+    par = pst_spe.parameter_data
+    assert (par.parlbnd == -4.0).all() and (par.parubnd == 4.0).all()
+    assert pst_spe.pestpp_options["par_sigma_range"] == 8
+    assert "parcov" not in pst_spe.pestpp_options
+    assert not os.path.exists(os.path.join(t_d, "spe.unc"))
 
     obs = pst_spe.observation_data
     assert np.allclose(obs.loc[obs_names, "obsval"].values,
@@ -3624,13 +3628,14 @@ def test_spe_prepare_pestpp(tmp_path):
     expected = spe.predict(np.zeros(len(spe.output_names)))
     assert np.allclose(sim.loc[data.columns].values, expected.loc[data.columns].values)
 
-    # and with nonzero eps values written to the input file
-    eps = np.random.default_rng(23).standard_normal(len(spe.output_names))
+    # and with nonzero eps_o values written to the input file (eps_f = 0)
+    eps_o = np.random.default_rng(23).standard_normal(len(spe.active_obs))
     pars = pd.read_csv(os.path.join(t_d, "spe_pars.csv"), index_col=0)
-    pars.loc[pst_spe.par_names, "parval1"] = eps
+    pars.loc[pst_spe.par_names, "parval1"] = eps_o
     pars.to_csv(os.path.join(t_d, "spe_pars.csv"))
     pyemu.os_utils.run("python forward_run.py", cwd=t_d)
     sim = pd.read_csv(os.path.join(t_d, "spe_sim_vals.csv"), index_col=0)["simval"]
+    eps = np.concatenate([eps_o, np.zeros(len(spe.forecast_names))])
     assert np.allclose(sim.loc[data.columns].values, spe.predict(eps).loc[data.columns].values)
 
 
