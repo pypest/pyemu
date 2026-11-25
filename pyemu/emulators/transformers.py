@@ -815,7 +815,7 @@ class TransformerPipeline:
         """
         
         if isinstance(X, pd.Series):
-            result = X.copy().to_frame().T
+            result = X.copy().to_frame().T.astype(float)
         else:
             result = X.copy().astype(float)
         # Need to reverse the order of transformers for inverse
