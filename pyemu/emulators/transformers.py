@@ -50,16 +50,27 @@ class Log10Transformer(BaseTransformer):
         self.columns = columns
         self.shifts = {}
 
+    def fit(self, X):
+        """Set the shift of each column from X so every value is positive."""
+        columns = self.columns if self.columns is not None else X.columns
+        columns = [col for col in columns if col in X.columns]
+        for col in columns:
+            min_val = X[col].min()
+            self.shifts[col] = -min_val + 1e-6 if min_val <= 0 else 0
+        return self
+
     def transform(self, X):
         result = X.copy()
         columns = self.columns if self.columns is not None else X.columns
         columns = [col for col in columns if col in X.columns]
-        
+
         for col in columns:
-            min_val = X[col].min()
-            shift = -min_val + 1e-6 if min_val <= 0 else 0
-            self.shifts[col] = shift
-            result[col] = np.log10(X[col] + shift)
+            # reuse the shift from fit() so new data is transformed the same way
+            # as the training data; only a column never fitted gets its own shift
+            if col not in self.shifts:
+                min_val = X[col].min()
+                self.shifts[col] = -min_val + 1e-6 if min_val <= 0 else 0
+            result[col] = np.log10(X[col] + self.shifts[col])
         return result
 
     def inverse_transform(self, X):
@@ -806,7 +817,7 @@ class TransformerPipeline:
         if isinstance(X, pd.Series):
             result = X.copy().to_frame().T
         else:
-            result = X.copy().astype(np.float32)
+            result = X.copy().astype(float)
         # Need to reverse the order of transformers for inverse
         for transformer, columns in reversed(self.transformers):
             cols_to_transform = columns if columns is not None else result.columns
@@ -816,7 +827,7 @@ class TransformerPipeline:
                 continue
             sub_X = result[valid_cols].copy()  # Create a copy to avoid reference issues
             inverted = transformer.inverse_transform(sub_X)
-            result.loc[:, valid_cols] = np.array(inverted, dtype=np.float32).flatten().reshape(result.loc[:, valid_cols].shape)  # Use loc for proper assignment
+            result.loc[:, valid_cols] = np.array(inverted, dtype=float).flatten().reshape(result.loc[:, valid_cols].shape)  # Use loc for proper assignment
         if isinstance(X, pd.Series):
             result = result.iloc[0]
         return result
