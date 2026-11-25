@@ -28,7 +28,10 @@ resolution-markers = [
 ]
 
 [manifest]
-constraints = [{ name = "coverage", specifier = "<7.13.1" }]
+constraints = [
+    { name = "coverage", specifier = "<7.13.1" },
+    { name = "fonttools", specifier = "!=4.69.0" },
+]
 
 [[package]]
 name = "absl-py"
