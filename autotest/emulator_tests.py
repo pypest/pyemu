@@ -1666,6 +1666,20 @@ class TestLog10Transformer:
         result = t.fit_transform(df)
         np.testing.assert_array_equal(result["b"].values, df["b"].values)
 
+    def test_new_data_uses_fitted_shift(self):
+        """Transforming new data reuses the shift from fit and does not change it."""
+        from pyemu.emulators.transformers import Log10Transformer
+
+        train = pd.DataFrame({"a": [-5.0, 0.0, 10.0]})
+        t = Log10Transformer(columns=["a"])
+        t.fit_transform(train)
+        fitted_shift = t.shifts["a"]
+
+        new = pd.DataFrame({"a": [1.0, 2.0]})  # all positive: would get no shift on its own
+        result = t.transform(new)
+        assert t.shifts["a"] == fitted_shift
+        np.testing.assert_allclose(result["a"].values, np.log10(new["a"].values + fitted_shift))
+
 
 # ===========================================================================
 # Base class / file generation tests
@@ -3118,6 +3132,512 @@ def test_pls_residuals_survive_pickle_round_trip(tmp_path):
     x = data.loc[[0], pc]
     assert np.allclose(loaded.predict_ensemble(x, nreals=50, seed=0).values,
                        emu.predict_ensemble(x, nreals=50, seed=0).values)
+
+
+# ---------------------------------------------------------------------------
+# SPE (sparse precision emulator) tests
+# ---------------------------------------------------------------------------
+
+
+def _spe_chain_data(n_real=300, n_out=12, n_obs=6, rho=0.8, seed=0):
+    """Gaussian AR(1) chain: each output depends only on the one before it, so
+    the true precision is tridiagonal.  The first n_obs outputs are observed,
+    the rest are forecasts."""
+    rng = np.random.default_rng(seed)
+    values = np.zeros((n_real, n_out))
+    values[:, 0] = rng.standard_normal(n_real)
+    for i in range(1, n_out):
+        innovation = np.sqrt(1.0 - rho ** 2) * rng.standard_normal(n_real)
+        values[:, i] = rho * values[:, i - 1] + innovation
+    columns = [f"out{i}" for i in range(n_out)]
+    # a non-trivial mean and scale so the standardization is exercised
+    data = pd.DataFrame(10.0 + 2.0 * values, columns=columns)
+    obs_names = columns[:n_obs]
+    return data, obs_names
+
+
+def _spe_pst(data, obs_names, noise_std=0.5):
+    """control file over the outputs: obsval is one prior realization plus a
+    shift, the observed outputs get weight 1/noise_std, the rest weight 0."""
+    pst = pyemu.Pst.from_par_obs_names(par_names=["dummy_p"], obs_names=list(data.columns))
+    pst.observation_data.loc[:, "obsval"] = data.iloc[0].values + 1.0
+    pst.observation_data.loc[:, "weight"] = 0.0
+    pst.observation_data.loc[obs_names, "weight"] = 1.0 / noise_std
+    return pst
+
+
+def _spe_obs_plus_noise(pst, num_reals, seed):
+    """obsval plus Gaussian noise with std 1/weight, for the nonzero-weight observations"""
+    obs = pst.observation_data
+    obs = obs.loc[obs.weight > 0.0]
+    rng = np.random.default_rng(seed)
+    noise = rng.standard_normal((num_reals, obs.shape[0])) / obs.weight.values
+    return pd.DataFrame(obs.obsval.values + noise, columns=obs.index)
+
+
+def _spe_joint_cov(spe):
+    """the joint prior covariance SPE implies, standardized space, output_names order:
+    C_oo = Q_oo^-1, C_fo = K C_oo, C_ff = K C_oo K^T + diag(d_f)"""
+    C_oo = np.linalg.inv(spe.Q_oo.toarray())
+    K = spe.K.toarray()
+    C_fo = K @ C_oo
+    C_ff = K @ C_oo @ K.T + np.diag(spe.d_f)
+    return np.block([[C_oo, C_fo.T], [C_fo, C_ff]])
+
+
+def test_spe_fit_structure():
+    """the observation factor is unit lower triangular, the observations come
+    first, and the chain structure is found (about one predictor per output)."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    spe = SPE(pst=_spe_pst(data, obs_names), data=data).fit()
+    nobs = len(obs_names)
+
+    assert spe.fitted
+    assert spe.obs_names == obs_names
+    assert sorted(spe.active_obs) == sorted(obs_names)
+    assert spe.output_names[:nobs] == spe.active_obs
+    assert spe.forecast_names == [c for c in data.columns if c not in obs_names]
+
+    L = spe.L_oo.toarray()
+    assert np.allclose(np.diag(L), 1.0)
+    assert np.allclose(np.triu(L, k=1), 0.0)
+
+    Q = spe.Q_oo.toarray()
+    assert np.allclose(Q, Q.T)
+    assert (spe.d_o > 0.0).all()
+    assert (spe.d_f > 0.0).all()
+    assert spe.K.shape == (len(spe.forecast_names), nobs)
+
+    # the first observation has no predecessors; on an AR(1) chain the rest need very few
+    assert spe.num_predictors.iloc[0] == 0
+    assert spe.num_predictors.mean() <= 2.0
+
+
+def test_spe_rcm_order_recovers_chain():
+    """with the observation columns shuffled, the RCM order still lets each
+    observation be explained by about one predecessor."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    shuffled = ["out3", "out0", "out5", "out1", "out4", "out2"]
+    data = data.loc[:, shuffled + [c for c in data.columns if c not in obs_names]]
+    spe = SPE(pst=_spe_pst(data, obs_names), data=data).fit()
+    assert spe.num_predictors.loc[spe.active_obs].mean() <= 1.5
+
+
+def test_spe_prior_ensemble_matches_data():
+    """draws from the emulated prior reproduce the training mean, std and the
+    lag-one correlation of the chain."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    spe = SPE(pst=_spe_pst(data, obs_names), data=data).fit()
+    prior = spe.prior_ensemble(num_reals=5000, seed=1)
+
+    assert isinstance(prior, pd.DataFrame)
+    assert prior.shape == (5000, data.shape[1])
+    assert list(prior.columns) == list(data.columns)
+
+    assert np.allclose(prior.mean().values, data.mean().values, atol=0.15)
+    assert np.allclose(prior.std().values, data.std().values, rtol=0.1)
+    assert abs(prior["out4"].corr(prior["out5"]) - data["out4"].corr(data["out5"])) < 0.05
+    # observation to forecast
+    assert abs(prior["out5"].corr(prior["out6"]) - data["out5"].corr(data["out6"])) < 0.05
+
+
+def test_spe_predict_zero_gives_mean():
+    """zero latent values map to the training mean; a single row returns a Series."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    spe = SPE(pst=_spe_pst(data, obs_names), data=data).fit()
+
+    out = spe.predict(np.zeros(data.shape[1]))
+    assert isinstance(out, pd.Series)
+    assert np.allclose(out.loc[data.columns].values, data.mean().values)
+
+    many = spe.predict(pd.DataFrame(np.zeros((3, data.shape[1]))))
+    assert many.shape == (3, data.shape[1])
+
+    with pytest.raises(ValueError):
+        spe.predict(np.zeros(data.shape[1] - 1))
+
+
+def test_spe_condition_matches_dense_update():
+    """each posterior realization equals the textbook (dense) update of the same
+    prior draw: z_o* = z_o + C_oo (C_oo + R)^-1 (y - z_o), then
+    z_f = K z_o* + d_f^1/2 eps_f."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names)
+    spe = SPE(pst=pst, data=data).fit()
+    obs_plus_noise = _spe_obs_plus_noise(pst, num_reals=20, seed=2)
+    post = spe.condition(obs_plus_noise, seed=3)
+
+    # the same quantities, the long way
+    nobs = len(spe.active_obs)
+    y = (obs_plus_noise.loc[:, spe.active_obs].values - spe.mean[:nobs]) / spe.std[:nobs]
+    R = np.linalg.inv(spe.noise_precision(obs_plus_noise).toarray())
+    C_oo = np.linalg.inv(spe.Q_oo.toarray())
+    gain = C_oo @ np.linalg.inv(C_oo + R)
+    rng = np.random.default_rng(3)   # same draws as condition()
+    eps_o = rng.standard_normal((nobs, 20))
+    eps_f = rng.standard_normal((len(spe.forecast_names), 20))
+    z_o = spe._draw_obs(eps_o)
+    z_o_post = z_o + gain @ (y.T - z_o)
+    z_f = spe.K.toarray() @ z_o_post + np.sqrt(spe.d_f)[:, None] * eps_f
+    z_post = np.vstack([z_o_post, z_f])
+    expected = pd.DataFrame(z_post.T * spe.std + spe.mean, columns=spe.output_names)
+
+    assert np.allclose(post.values, expected.loc[:, data.columns].values)
+
+
+def test_spe_condition_posterior_statistics():
+    """with many realizations the posterior ensemble mean and variance match the
+    textbook Gaussian posterior, and the observations are tighter than the prior."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    noise_std = 0.5
+    pst = _spe_pst(data, obs_names, noise_std=noise_std)
+    spe = SPE(pst=pst, data=data).fit()
+    post = spe.condition(_spe_obs_plus_noise(pst, num_reals=5000, seed=4), seed=4)
+
+    # textbook posterior in standardized space, uncorrelated noise
+    nobs = len(spe.active_obs)
+    y = (pst.observation_data.loc[spe.active_obs, "obsval"].values - spe.mean[:nobs]) / spe.std[:nobs]
+    r = (noise_std / spe.std[:nobs]) ** 2
+    C = _spe_joint_cov(spe)
+    gain = C[:, :nobs] @ np.linalg.inv(C[:nobs, :nobs] + np.diag(r))
+    post_mean = pd.Series(gain @ y * spe.std + spe.mean, index=spe.output_names)
+    post_var = pd.Series(np.diag(C - gain @ C[:nobs, :]) * spe.std ** 2, index=spe.output_names)
+
+    assert np.allclose(post.mean().values, post_mean.loc[data.columns].values, atol=0.1)
+    assert np.allclose(post.var().values, post_var.loc[data.columns].values, rtol=0.15)
+    assert (post.loc[:, obs_names].std() < data.loc[:, obs_names].std()).all()
+
+
+def test_spe_noise_precision_correlated_noise():
+    """correlated noise is captured by R^-1: its inverse matches the noise
+    covariance; uncorrelated noise gives an (almost) diagonal R^-1."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names)
+    spe = SPE(pst=pst, data=data).fit()
+    nobs = len(obs_names)
+
+    # AR(1) noise across the observations, std 0.5, lag-one correlation 0.7
+    rng = np.random.default_rng(16)
+    rho, num_reals = 0.7, 5000
+    noise = np.zeros((num_reals, nobs))
+    noise[:, 0] = rng.standard_normal(num_reals)
+    for i in range(1, nobs):
+        noise[:, i] = rho * noise[:, i - 1] + np.sqrt(1.0 - rho ** 2) * rng.standard_normal(num_reals)
+    obsvals = pst.observation_data.loc[obs_names, "obsval"].values
+    obs_plus_noise = pd.DataFrame(obsvals + 0.5 * noise, columns=obs_names)
+
+    # R in standardized units, compared in obs_names order
+    R = np.linalg.inv(spe.noise_precision(obs_plus_noise).toarray())
+    pos = [spe.active_obs.index(o) for o in obs_names]
+    std = spe.std[pos]
+    lag = np.abs(np.subtract.outer(np.arange(nobs), np.arange(nobs)))
+    true_R = 0.25 * rho ** lag / np.outer(std, std)
+    assert np.allclose(R[np.ix_(pos, pos)], true_R, atol=0.01)
+
+    # uncorrelated noise: off-diagonal partial correlations are small
+    R_inv = spe.noise_precision(_spe_obs_plus_noise(pst, num_reals=5000, seed=17)).toarray()
+    partial = R_inv / np.sqrt(np.outer(np.diag(R_inv), np.diag(R_inv)))
+    assert np.abs(partial - np.eye(nobs)).max() < 0.1
+
+    post = spe.condition(obs_plus_noise.iloc[:50], seed=18)
+    assert np.isfinite(post.values).all()
+
+
+def test_spe_condition_tiny_noise_pins_observations():
+    """with very small noise the posterior sits on the observed values."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names, noise_std=1.0e-4)
+    spe = SPE(pst=pst, data=data).fit()
+    post = spe.condition(_spe_obs_plus_noise(pst, num_reals=50, seed=5), seed=5)
+
+    obsvals = pst.observation_data.loc[obs_names, "obsval"].values
+    assert np.allclose(post.loc[:, obs_names].mean().values, obsvals, atol=1.0e-3)
+
+
+def test_spe_zero_weight_observation_not_conditioned_on():
+    """only the nonzero-weight observations are conditioned on; columns of
+    obs_plus_noise for anything else are ignored."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names)
+    pst.observation_data.loc["out2", "weight"] = 0.0
+    spe = SPE(pst=pst, data=data).fit()
+    assert "out2" not in spe.obs_names
+
+    obs_plus_noise = _spe_obs_plus_noise(pst, num_reals=20, seed=6)
+    obs_plus_noise["out9"] = 123.0  # not an observation, ignored
+    post = spe.condition(obs_plus_noise, seed=6)
+    assert post.shape == (20, data.shape[1])
+
+
+def test_spe_constant_observation_dropped():
+    """an observation that never varies in the prior is not conditioned on."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    data["out3"] = 5.0
+    pst = _spe_pst(data, obs_names)
+    spe = SPE(pst=pst, data=data).fit()
+    assert "out3" not in spe.active_obs
+
+    post = spe.condition(_spe_obs_plus_noise(pst, num_reals=10, seed=7), seed=7)
+    assert (post["out3"].values == 5.0).all()
+
+
+def test_spe_condition_keeps_realization_names():
+    """the posterior has one realization per row of obs_plus_noise, with its name."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names)
+    spe = SPE(pst=pst, data=data).fit()
+
+    obs_plus_noise = _spe_obs_plus_noise(pst, num_reals=25, seed=8)
+    obs_plus_noise.index = [f"n{i}" for i in range(25)]
+    post = spe.condition(obs_plus_noise, seed=8)
+    assert list(post.index) == list(obs_plus_noise.index)
+
+    with pytest.raises(ValueError):
+        spe.condition(obs_plus_noise.drop(columns=["out0"]))
+
+
+def test_spe_condition_without_obs_plus_noise():
+    """with obs_plus_noise omitted, the noise is drawn from the pst obsval and
+    weights, and the posterior is close to the textbook one."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    noise_std = 0.5
+    pst = _spe_pst(data, obs_names, noise_std=noise_std)
+    spe = SPE(pst=pst, data=data).fit()
+
+    post = spe.condition(num_reals=2000, seed=19)
+    assert post.shape == (2000, data.shape[1])
+    assert np.allclose(post.loc[:, obs_names].mean().values,
+                       spe.condition(_spe_obs_plus_noise(pst, num_reals=2000, seed=20),
+                                     seed=20).loc[:, obs_names].mean().values, atol=0.1)
+
+    # same seed, same result
+    assert np.allclose(spe.condition(num_reals=10, seed=21).values,
+                       spe.condition(num_reals=10, seed=21).values)
+
+
+def test_spe_noise_std_from_standard_deviation_column():
+    """the pst standard_deviation column sets the noise std where it is not
+    nan; elsewhere it is 1/weight."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names, noise_std=0.5)
+    pst.observation_data.loc[:, "standard_deviation"] = np.nan
+    pst.observation_data.loc["out1", "standard_deviation"] = 0.1
+    spe = SPE(pst=pst, data=data).fit()
+
+    assert spe.noise_std.loc["out1"] == 0.1
+    assert np.allclose(spe.noise_std.drop("out1").values, 0.5)
+
+    # the posterior of out1 is pinned more tightly than with std 0.5
+    post = spe.condition(num_reals=500, seed=22)
+    assert post["out1"].std() < post["out0"].std()
+
+
+def test_spe_condition_with_gaussian_draw():
+    """an obs+noise ensemble from ObservationEnsemble.from_gaussian_draw works directly."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names)
+    spe = SPE(pst=pst, data=data).fit()
+    obs_plus_noise = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=30)
+    post = spe.condition(obs_plus_noise, seed=9)
+    assert post.shape == (30, data.shape[1])
+
+
+def test_spe_with_normal_score_transform():
+    """fit, draw and condition run through a normal score transform and give
+    finite results in the original units."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    data = np.exp(data / 5.0)  # skewed, positive outputs
+    pst = _spe_pst(data, obs_names, noise_std=0.2)
+    spe = SPE(pst=pst, data=data, transforms=[{"type": "normal_score"}]).fit()
+
+    prior = spe.prior_ensemble(num_reals=50, seed=10)
+    post = spe.condition(_spe_obs_plus_noise(pst, num_reals=50, seed=10), seed=10)
+    assert np.isfinite(prior.values).all()
+    assert np.isfinite(post.values).all()
+    assert list(post.columns) == list(data.columns)
+
+
+def test_spe_log10_shift_unchanged_by_condition():
+    """with a log10 transform that needs a shift (nonpositive training values),
+    condition() uses the fitted shift and does not change later predictions."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    data = np.exp(data / 5.0) - 7.0   # some training values are below zero
+    pst = _spe_pst(data, obs_names, noise_std=0.2)
+    pst.observation_data.loc[obs_names, "obsval"] = data.loc[:, obs_names].max().values + 1.0
+    spe = SPE(pst=pst, data=data, transforms=[{"type": "log10"}]).fit()
+
+    before = spe.prior_ensemble(num_reals=50, seed=12)
+    spe.condition(_spe_obs_plus_noise(pst, num_reals=50, seed=12), seed=12)
+    after = spe.prior_ensemble(num_reals=50, seed=12)
+    assert np.allclose(before.values, after.values)
+
+
+def test_spe_with_standard_scaler_transform():
+    """a transform fitted across all columns works in condition()."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names)
+    spe = SPE(pst=pst, data=data, transforms=[{"type": "standard_scaler"}]).fit()
+    post = spe.condition(_spe_obs_plus_noise(pst, num_reals=20, seed=13), seed=13)
+    assert np.isfinite(post.values).all()
+
+
+def test_spe_constant_forecast_stays_constant():
+    """an output that never varies in the prior comes back exactly constant."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    data["out9"] = 0.1   # identical values whose computed std is ~1e-17, not 0
+    pst = _spe_pst(data, obs_names)
+    spe = SPE(pst=pst, data=data).fit()
+
+    prior = spe.prior_ensemble(num_reals=20, seed=14)
+    post = spe.condition(_spe_obs_plus_noise(pst, num_reals=20, seed=14), seed=14)
+    assert (prior["out9"].values == 0.1).all()
+    assert (post["out9"].values == 0.1).all()
+
+
+def test_spe_save_load(tmp_path):
+    """a fitted SPE pickles and gives the same draws after loading."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    spe = SPE(pst=_spe_pst(data, obs_names), data=data).fit()
+    filename = os.path.join(str(tmp_path), "spe.pkl")
+    spe.save(filename)
+    loaded = SPE.load(filename)
+    assert np.allclose(loaded.prior_ensemble(num_reals=10, seed=15).values,
+                       spe.prior_ensemble(num_reals=10, seed=15).values)
+
+
+def test_spe_input_errors():
+    """bad inputs raise clear errors."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names)
+
+    with pytest.raises(ValueError):
+        SPE(pst=None, data=data)
+    with pytest.raises(ValueError):
+        SPE(pst=pst, data=None)
+    with pytest.raises(ValueError):
+        SPE(pst=_spe_pst(data, []), data=data)  # no nonzero-weight observations
+    with pytest.raises(ValueError):
+        SPE(pst=pst, data=data.iloc[:3]).fit()  # fewer than 4 realizations
+    with pytest.raises(ValueError):
+        SPE(pst=pst, data=data, transforms=[{"type": "row_wise_minmax"}])
+
+    spe = SPE(pst=pst, data=data)
+    with pytest.raises(ValueError):
+        spe.predict(np.zeros(data.shape[1]))  # not fitted
+    with pytest.raises(ValueError):
+        spe.condition(_spe_obs_plus_noise(pst, num_reals=10, seed=11))  # not fitted
+
+    spe.fit()
+    no_noise = pd.DataFrame([pst.observation_data.loc[obs_names, "obsval"].values] * 10,
+                            columns=obs_names)
+    with pytest.raises(ValueError):
+        spe.condition(no_noise)  # zero variance, so no noise to condition with
+    with pytest.raises(ValueError):
+        spe.condition(no_noise.iloc[:3])  # fewer than 4 rows
+    with pytest.raises(ValueError):
+        spe.condition(no_noise.iloc[0])  # a Series
+
+
+def spe_synth(tmp_d, transforms=None, tag="", use_runstor=True):
+    """fit SPE on the AR(1) chain, set up PESTPP-IES with prepare_pestpp, run
+    one iteration and check that phi went down (like dsi_synth).  with
+    use_runstor, PESTPP-IES uses the external run manager (/e)."""
+    from pyemu.emulators import SPE
+    tmp_d = Path(tmp_d)
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names)
+    spe = SPE(pst=pst, data=data, transforms=transforms).fit()
+
+    td = tmp_d / "template_spe"
+    pst_spe = spe.prepare_pestpp(td, use_runstor=use_runstor, pst_name="spe")
+    pst_spe.control_data.noptmax = 1
+    pst_spe.pestpp_options["ies_num_reals"] = 10
+    pst_spe.write(os.path.join(td, "spe.pst"), version=2)
+
+    md = tmp_d / f"master_spe{tag}"
+    if use_runstor:
+        shutil.copytree(td, md)
+        pyemu.os_utils.run(f"{ies_exe_path} spe.pst /e", cwd=md, verbose=True)
+    else:
+        pyemu.os_utils.start_workers(td, ies_exe_path, "spe.pst", num_workers=1,
+                                     worker_root=tmp_d, master_dir=md, port=_get_port())
+
+    # verify that phi reduced
+    pst = pyemu.Pst(os.path.join(md, "spe.pst"))
+    phis = pst.ies.phimeas["mean"].values
+    assert phis[-1] < phis[0]
+
+
+def test_spe_ies_basic(tmp_path):
+    spe_synth(tmp_path, transforms=None)
+
+
+def test_spe_ies_log10(tmp_path):
+    spe_synth(tmp_path, transforms=[{"type": "log10"}])
+
+
+def test_spe_prepare_pestpp(tmp_path):
+    """prepare_pestpp writes a working PEST++ interface: one eps parameter per
+    active observation with prior std 1, every output as an observation, and
+    a forward_run.py that gives the same values as predict() with eps_f = 0."""
+    from pyemu.emulators import SPE
+    data, obs_names = _spe_chain_data()
+    pst = _spe_pst(data, obs_names)
+    spe = SPE(pst=pst, data=data, transforms=[{"type": "log10"}]).fit()
+
+    t_d = os.path.join(str(tmp_path), "spe_template")
+    pst_spe = spe.prepare_pestpp(t_d)
+
+    assert pst_spe.par_names == ["eps_" + name for name in spe.active_obs]
+    assert sorted(pst_spe.obs_names) == sorted(data.columns)
+    # prior std 1 from the bounds: (4 - -4) / par_sigma_range
+    par = pst_spe.parameter_data
+    assert (par.parlbnd == -4.0).all() and (par.parubnd == 4.0).all()
+    assert pst_spe.pestpp_options["par_sigma_range"] == 8
+    assert "parcov" not in pst_spe.pestpp_options
+    assert not os.path.exists(os.path.join(t_d, "spe.unc"))
+
+    obs = pst_spe.observation_data
+    assert np.allclose(obs.loc[obs_names, "obsval"].values,
+                       pst.observation_data.loc[obs_names, "obsval"].values)
+    assert (obs.loc[obs_names, "weight"] > 0.0).all()
+    assert (obs.loc[[c for c in data.columns if c not in obs_names], "weight"] == 0.0).all()
+
+    # prepare_pestpp ran forward_run.py once with all eps = 0
+    sim = pd.read_csv(os.path.join(t_d, "spe_sim_vals.csv"), index_col=0)["simval"]
+    expected = spe.predict(np.zeros(len(spe.output_names)))
+    assert np.allclose(sim.loc[data.columns].values, expected.loc[data.columns].values)
+
+    # and with nonzero eps_o values written to the input file (eps_f = 0)
+    eps_o = np.random.default_rng(23).standard_normal(len(spe.active_obs))
+    pars = pd.read_csv(os.path.join(t_d, "spe_pars.csv"), index_col=0)
+    pars.loc[pst_spe.par_names, "parval1"] = eps_o
+    pars.to_csv(os.path.join(t_d, "spe_pars.csv"))
+    pyemu.os_utils.run("python forward_run.py", cwd=t_d)
+    sim = pd.read_csv(os.path.join(t_d, "spe_sim_vals.csv"), index_col=0)["simval"]
+    eps = np.concatenate([eps_o, np.zeros(len(spe.forecast_names))])
+    assert np.allclose(sim.loc[data.columns].values, spe.predict(eps).loc[data.columns].values)
+
 
 if __name__ == "__main__":
     tmp_path = Path("temp")

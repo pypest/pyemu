@@ -107,7 +107,9 @@ pyemu = { workspace = true }
 # process (e.g. a PEST++ run whose model command is `python forward_run.py`): `coverage combine` skips the data file
 # holding the kernels' measurements as "duplicate data". Reported upstream
 # (https://github.com/coveragepy/coveragepy/issues/2370); remove this pin once fixed.
-constraint-dependencies = ["coverage<7.13.1"]
+# fonttools 4.69.0 was published with only cp311 wheels (its release build failed partway), so
+# `uv sync` fails on other Pythons. Remove this once a complete fonttools release is out.
+constraint-dependencies = ["coverage<7.13.1", "fonttools!=4.69.0"]
 
 [tool.pytest.ini_options]
 testpaths = [
